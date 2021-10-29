@@ -38,18 +38,26 @@ class db_manager {
     }
 
     private function getTheseFromArrayRepr(array $array): these {
+        $dirs_id = explode(",", substr($array["directors_id"], 1, -1));
+
+        $sanitized = array_filter($dirs_id, function($elem) {
+            return $elem != "\"\"";
+        });
+
+        $dirs_id = count($sanitized) > 0 ? $sanitized : array();
+
         return new these(
             $array["author"],
             $array["author_id"],
             $array["title"],
             explode("\",\"", substr($array["directors"], 2, -2)),
-            explode(",", substr($array["directors_id"], 1, -1)),
+            $dirs_id,
             $array["presentation_institution"],
             $array["institution_id"],
             $array["domain"],
             $array["finished"],
-            $array["inscription_date"] ?: "",
-            $array["presentation_date"] ?: "",
+            $array["inscription_date"] ?: NULL,
+            $array["presentation_date"] ?: NULL,
             $array["language"],
             $array["id"],
             $array["is_online"],

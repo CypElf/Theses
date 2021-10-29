@@ -1,11 +1,16 @@
 <?php
 require_once("lib/db_manager.php");
 
-function import(string $file_name) {
+function import(string $file_name, int $from_line = 0) {
     if (($handle = fopen($file_name, "r")) !== FALSE) {
         if (fgetcsv($handle, 1000, ";") !== FALSE) {
             $db_manager = new db_manager();
+            fseek($handle, $from_line);
             while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+                if ($data[13] == NULL) {
+                    continue;
+                }
+
                 // field of index 4 is ignored because it's the same as field of index 3 in reverse order
                 $these = new these(
                     $data[0],

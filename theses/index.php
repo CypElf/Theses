@@ -12,8 +12,9 @@
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
 
+        set_time_limit(30000);
         require("lib/import.php");
-        import("res/raw.csv");
+        import("res/complet.csv", 62460);
     ?>
 </body>
 </html>

@@ -18,7 +18,7 @@
         if (isset($_GET["q"])) {
             $query = $_GET["q"];
 
-            $theses = json_decode(file_get_contents("http://localhost/v1/api.php?q=" . $query));
+            $theses = json_decode(file_get_contents("http://localhost/api/v1.php?q=" . $query));
 
             if (count($theses) == 0) {
                 echo "<p class=\"noRes\">Aucun résultat</p>";

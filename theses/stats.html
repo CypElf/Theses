@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques sur la thèse voulue</title>
+    <link rel="stylesheet" href="styles/stats.css">
+</head>
+<body>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/series-label.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+    <form action="">
+        <label for="query">Query : </label><input id="query" class="input" type="text">
+        <button class="button">search</button>
+    </form>
+    
+    <div id="container"></div>
+    <div id="container2"></div>
+    <script src="./scripts/stats.js"></script>
+</body>
+</html>
