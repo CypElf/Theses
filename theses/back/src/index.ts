@@ -1,8 +1,9 @@
 import express from "express"
 import mongoose from "mongoose"
+import { StatusCodes } from "http-status-codes"
 import dotenv from "dotenv"
 import { exit } from "process"
-import { importFromCsv } from "./import"
+import { importFromCsv } from "./db/import"
 
 async function main() {
     dotenv.config()
@@ -28,14 +29,14 @@ async function main() {
     })
     
     app.get("/theses", (req, res) => {
-        // const { limit, query } = req.body
-    
+        // const { limit, query } = req.query
+
         res.send("WIP")
     })
     
-    app.post("/import", async (req, res) => {
+    app.put("/import", async (req, res) => {
         await importFromCsv("./res/complet.csv")
-        res.send("Import effectué")
+        res.sendStatus(StatusCodes.NO_CONTENT)
     })
 }
 
