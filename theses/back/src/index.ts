@@ -1,5 +1,5 @@
 import express from "express"
-import mongoose from "mongoose"
+import { MeiliSearch } from 'meilisearch'
 import { StatusCodes } from "http-status-codes"
 import dotenv from "dotenv"
 import { exit } from "process"
@@ -8,17 +8,19 @@ import { importFromCsv } from "./db/import"
 async function main() {
     dotenv.config()
 
-    if (!process.env["MONGODB_USER"]) {
-        console.error("Missing the `MONGODB_USER` environment variable (please specify it in the `.env` file)")
-        exit(1)
-    }
-    if (!process.env["MONGODB_PASSWORD"]) {
-        console.error("Missing the `MONGODB_PASSWORD` environment variable (please specify it in the `.env` file)")
+    if (!process.env["MEILISEARCH_MASTER_KEY"]) {
+        console.error("Missing the `MEILISEARCH_MASTER_KEY` environment variable (please specify it in the `.env` file)")
         exit(1)
     }
     
-    await mongoose.connect(`mongodb://${process.env["MONGODB_USER"]}:${process.env["MONGODB_PASSWORD"]}@localhost/theses_back`)
-    
+    const meili = new MeiliSearch({
+        host: "http://127.0.0.1:7700",
+        apiKey: process.env["MEILISEARCH_MASTER_KEY"]
+    })
+
+    await meili.health()
+    const index = meili.index("theses")
+
     const port = 12000
     
     const app = express()
@@ -35,8 +37,9 @@ async function main() {
     })
     
     app.put("/import", async (req, res) => {
-        await importFromCsv("./res/complet.csv")
-        res.sendStatus(StatusCodes.NO_CONTENT)
+        const success = await importFromCsv("./res/complet.csv", index)
+        if (success) res.sendStatus(StatusCodes.NO_CONTENT)
+        else res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
     })
 }
 
