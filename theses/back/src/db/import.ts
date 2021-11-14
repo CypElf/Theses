@@ -30,7 +30,7 @@ export async function importFromCsv(file: string, index: Index): Promise<boolean
             if (value.length === 0) return null
 
             if (["authors", "authors_id", "directors", "directors_reversed", "directors_id"].includes(header)) {
-                return value.split(",")
+                return value.split(",").filter(v => v !== "")
             }
             if (header === "finished") {
                 return value === "soutenue"

@@ -1,4 +1,5 @@
 import express from "express"
+import cors from "cors"
 import { MeiliSearch } from 'meilisearch'
 import { StatusCodes } from "http-status-codes"
 import dotenv from "dotenv"
@@ -25,15 +26,20 @@ async function main() {
     
     const app = express()
     app.use(express.json())
+    app.use(cors())
     
     app.listen(port, () => {
         console.log(`Server started on port ${port}`)
     })
     
-    app.get("/theses", (req, res) => {
-        // const { limit, query } = req.query
+    app.get("/theses", async (req, res) => {
+        const { limit, query } = req.query as { limit: string | undefined, query: string | undefined }
 
-        res.send("WIP")
+        if (limit && isNaN(Number.parseInt(limit))) return res.sendStatus(StatusCodes.BAD_REQUEST)
+
+        const results = await index.search(query, { limit: limit ? Number.parseInt(limit) : Number.MAX_SAFE_INTEGER })
+
+        res.send(results)
     })
     
     app.put("/import", async (req, res) => {
