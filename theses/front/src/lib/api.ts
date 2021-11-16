@@ -20,3 +20,5 @@ export interface These {
     lon: string | null,
     lat: string | null
 }
+
+export const apiUrl = "http://localhost:12000"
