@@ -169,10 +169,10 @@ export default function Home() {
     return (<>
         <form onSubmit={e => executeRequest(e, query, limit, setData, setError)} method="POST">
             <label htmlFor="query">Query: </label>
-            <input onChange={e => setQuery(e.target.value)} type="text" id="query" name="query"></input><br />
+            <input className="border-2 p-1 m-2" onChange={e => setQuery(e.target.value)} type="text" id="query" name="query"></input><br />
             <label htmlFor="query">Limit: </label>
-            <input onChange={e => setLimit(e.target.value)} type="text" id="limit" name="limit"></input><br />
-            <button>Search</button>
+            <input className="border-2 p-1 m-2" onChange={e => setLimit(e.target.value)} type="text" id="limit" name="limit"></input><br />
+            <button className="border-2 p-1 m-2">Search</button>
         </form>
 
         {error && <p>{error}</p>}
