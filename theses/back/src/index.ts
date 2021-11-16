@@ -4,7 +4,7 @@ import { MeiliSearch } from 'meilisearch'
 import { StatusCodes } from "http-status-codes"
 import dotenv from "dotenv"
 import { exit } from "process"
-import { importFromCsv } from "./db/import"
+import { thesesImportFromCsv, geoImportFromJson } from "./db/import"
 
 async function main() {
     dotenv.config()
@@ -20,7 +20,8 @@ async function main() {
     })
 
     await meili.health()
-    const index = meili.index("theses")
+    const thesesIndex = meili.index("theses")
+    const geoIndex = meili.index("geo")
 
     const port = 12000
     
@@ -37,13 +38,28 @@ async function main() {
 
         if (limit && isNaN(Number.parseInt(limit))) return res.sendStatus(StatusCodes.BAD_REQUEST)
 
-        const results = await index.search(query, { limit: limit ? Number.parseInt(limit) : Number.MAX_SAFE_INTEGER })
+        const results = await thesesIndex.search(query, { limit: limit ? Number.parseInt(limit) : Number.MAX_SAFE_INTEGER })
 
         res.send(results)
     })
     
+    app.get("/institutions", async (req, res) => {
+        const { lat, lng, rad } = req.query as { lat: string | undefined, lng: string | undefined, rad: string | undefined }
+
+        if (!lat || !lng || !rad) return res.sendStatus(StatusCodes.BAD_REQUEST)
+
+        const places = await geoIndex.search("", { filter: [`_geoRadius(${lat}, ${lng}, ${rad})`] })
+        res.send(places)
+    })
+
     app.put("/import", async (req, res) => {
-        const success = await importFromCsv("./res/complet.csv", index)
+        const success = await thesesImportFromCsv("./res/theses.csv", thesesIndex)
+        if (success) res.sendStatus(StatusCodes.NO_CONTENT)
+        else res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
+    })
+
+    app.put("/import-geo", async (req, res) => {
+        const success = await geoImportFromJson("./res/etablissements.json", geoIndex)
         if (success) res.sendStatus(StatusCodes.NO_CONTENT)
         else res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
     })
