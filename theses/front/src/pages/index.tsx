@@ -1,11 +1,11 @@
 import Hightcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
+import { StaticImage } from "gatsby-plugin-image"
 import { apiUrl, These } from "../lib/api"
 
 export default function Home() {
     const [query, setQuery] = useState("")
-    const [limit, setLimit] = useState("")
     const [error, setError] = useState<string>()
 
     const [data, setData] = useState<These[]>()
@@ -167,14 +167,13 @@ export default function Home() {
     }, [data])
     
     return (<>
-        <form onSubmit={e => executeRequest(e, query, limit, setData, setError)} method="POST">
-            <label htmlFor="query">Query: </label>
-            <input className="border-2 p-1 m-2" onChange={e => setQuery(e.target.value)} type="text" id="query" name="query"></input><br />
-            <label htmlFor="query">Limit: </label>
-            <input className="border-2 p-1 m-2" onChange={e => setLimit(e.target.value)} type="text" id="limit" name="limit"></input><br />
-            <button className="border-2 p-1 m-2">Search</button>
+    <div className="flex justify-center m-2">
+        <form onSubmit={e => executeRequest(e, query, setData, setError)} method="POST">
+            <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
+            <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5" onChange={e => setQuery(e.target.value)} type="text" id="query" name="query"></input>
+            <button className="border-2 rounded-xl text-white bg-theses-blue px-3 py-2 m-2">Rechercher</button>
         </form>
-
+    </div>
         {error && <p>{error}</p>}
 
         {data && pieChart && splineChart && <>
@@ -190,11 +189,11 @@ export default function Home() {
     </>)
 }
 
-async function executeRequest(e: React.FormEvent<HTMLFormElement>, query: string, limit: string, setData: Dispatch<SetStateAction<These[]>>, setError: Dispatch<SetStateAction<string | null>>) {
+async function executeRequest(e: React.FormEvent<HTMLFormElement>, query: string, setData: Dispatch<SetStateAction<These[]>>, setError: Dispatch<SetStateAction<string | null>>) {
     e.preventDefault()
     let data
     try {
-        const result = await fetch(`${apiUrl}/theses?query=${query}&limit=${limit}`)
+        const result = await fetch(`${apiUrl}/theses?query=${query}&limit=50`)
         data = await result.json()
     }
     catch {
