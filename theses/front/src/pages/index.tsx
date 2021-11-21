@@ -15,6 +15,7 @@ export default function Home() {
 
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
+    const currentPage = results ? results.offset / results.limit + 1 : 1
 
     // let mapOptions = null
 
@@ -207,11 +208,11 @@ export default function Home() {
                 <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && `pour ${results.query}`}</h1>
                 {
                     <nav>
-                    {maxPage < 5 ? Array(maxPage).fill(0).map((element, index) => {
-                        return (<>
-                            <a key={index} className="cursor-pointer" onClick={e => executeRequest(query, limit, index, setResults, setError)}>{index + 1}</a> {index + 1 < maxPage && "- "}
-                        </>)
-                    }) : "TROP DE PAGES (WIP)"}
+
+                    {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, setResults, setError)}>{currentPage - 1}</a>}
+                    <a className="cursor-pointer text-xl text-theses-blue mx-3">{currentPage}</a>
+                    {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, setResults, setError)}>{currentPage + 1}</a>}
+
                     </nav>
                 }
                 {results.hits.map(these => {
