@@ -16,9 +16,17 @@ export interface These {
     these_id: string,
     available_online: boolean,
     upload_date: string,
-    update_date: string,
-    lon: string | null,
-    lat: string | null
+    update_date: string
+}
+
+export interface QueryResult {
+    hits: These[],
+    nbHits: number,
+    exhaustiveNbHits: boolean,
+    query: string,
+    limit: number,
+    offset: number,
+    processingTimeMs : number
 }
 
 export const apiUrl = "http://localhost:12000"

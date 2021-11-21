@@ -2,16 +2,20 @@ import Hightcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { StaticImage } from "gatsby-plugin-image"
-import { apiUrl, These } from "../lib/api"
+import { apiUrl, QueryResult, These } from "../lib/api"
 
 export default function Home() {
     const [query, setQuery] = useState("")
     const [error, setError] = useState<string>()
 
-    const [data, setData] = useState<These[]>()
+    const [results, setResults] = useState<QueryResult>()
 
     const [pieChart, setPieChart] = useState<object>()
     let [splineChart, setSplineChart] = useState<object>()
+
+    const limit = 10
+    const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
+
     // let mapOptions = null
 
     // useEffect(() => {
@@ -27,10 +31,14 @@ export default function Home() {
     //             }))
     //         }
     //     })()
-    // }, [data])
+    // }, [data])*
 
     useEffect(() => {
-        if (data) {
+        executeRequest(query, limit, 0, setResults, setError)
+    }, [query])
+
+    useEffect(() => {
+        if (results) {
             setPieChart({
                 chart: {
                     type: "pie"
@@ -67,22 +75,25 @@ export default function Home() {
                         data: [
                             {
                                 name: "Non terminées",
-                                y: data.filter(these => !these.finished).length / data.length * 100,
+                                y: results.hits.filter(these => !these.finished).length / results.hits.length * 100,
                                 drilldown: "Chrome"
                             },
                             {
                                 name: "Terminées",
-                                y: data.filter(these => these.finished).length / data.length * 100,
+                                y: results.hits.filter(these => these.finished).length / results.hits.length * 100,
                                 drilldown: "Terminées"
                             }
                         ]
                     }
-                ]
+                ],
+                credits: {
+                    enabled: false
+                }
             })
     
-            const dates = data.map(these => these.presentation_date).filter(t => t != null)
+            const dates = results.hits.map(these => these.presentation_date).filter(t => t != null)
             const years = [...new Set(dates.map(date => date.getFullYear()).filter(date => !isNaN(date)))].sort((a, b) => a - b)
-            const thesesPerYear = years.map(year => data.filter(these => these.presentation_date?.getFullYear() === year).length)
+            const thesesPerYear = years.map(year => results.hits.filter(these => these.presentation_date?.getFullYear() === year).length)
             console.log(thesesPerYear)
     
             setSplineChart({
@@ -164,45 +175,71 @@ export default function Home() {
             //     }]
             // }
         }
-    }, [data])
-    
-    return (<>
-    <div className="flex justify-center m-2">
-        <form onSubmit={e => executeRequest(e, query, setData, setError)} method="POST">
-            <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
-            <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5" onChange={e => setQuery(e.target.value)} type="text" id="query" name="query"></input>
-            <button className="border-2 rounded-xl text-white bg-theses-blue px-3 py-2 m-2">Rechercher</button>
-        </form>
-    </div>
-        {error && <p>{error}</p>}
+    }, [results])
 
-        {data && pieChart && splineChart && <>
-            <HighchartsReact
-                highcharts={Hightcharts}
-                options={pieChart}
-            />
-            <HighchartsReact
-                highcharts={Hightcharts}
-                options={splineChart}
-            />
-        </>}
+    return (<>
+    <div className="flex justify-center my-8">
+        <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
+        <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5 w-96 text-lg" onChange={e => setQuery(e.target.value) } type="text" id="query" name="query"></input>
+    </div>
+        {error && <p className="text-2xl text-center text-red-800">{error}</p>}
+
+        {results && pieChart && splineChart &&
+        <div className="grid grid-cols-3">
+            <div className="col-span-2">
+                <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
+                <div className="grid grid-cols-2">
+                    <HighchartsReact
+                        highcharts={Hightcharts}
+                        options={pieChart}
+                    />
+                    <HighchartsReact
+                        highcharts={Hightcharts}
+                        options={pieChart}
+                    />
+                </div>
+                <HighchartsReact
+                    highcharts={Hightcharts}
+                    options={splineChart}
+                />
+            </div>
+            <div>
+                <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && `pour ${results.query}`}</h1>
+                {
+                    <nav>
+                    {maxPage < 5 ? Array(maxPage).fill(0).map((element, index) => {
+                        return (<>
+                            <a key={index} className="cursor-pointer" onClick={e => executeRequest(query, limit, index, setResults, setError)}>{index + 1}</a> {index + 1 < maxPage && "- "}
+                        </>)
+                    }) : "TROP DE PAGES (WIP)"}
+                    </nav>
+                }
+                {results.hits.map(these => {
+                    return (<div key={these.id} className="m-3">
+                        {these.title} de {these.authors.join(", ")}
+                    </div>)
+                })}
+            </div>
+        </div>}
     </>)
 }
 
-async function executeRequest(e: React.FormEvent<HTMLFormElement>, query: string, setData: Dispatch<SetStateAction<These[]>>, setError: Dispatch<SetStateAction<string | null>>) {
-    e.preventDefault()
+async function executeRequest(query: string, limit: number, offset: number, setResults: Dispatch<SetStateAction<QueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
+    console.log(offset)
+    
     let data
     try {
-        const result = await fetch(`${apiUrl}/theses?query=${query}&limit=50`)
+        const result = await fetch(`${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`)
         data = await result.json()
     }
     catch {
+        setResults(undefined)
         return setError("A server error occured.")
     }
 
     setError(null)
 
-    const datedData = data.hits.map(these => {
+    data.hits = data.hits.map(these => {
         if (these.presentation_date) {
             const [day, month, year] = these.presentation_date.split("-")
             these.presentation_date = new Date(Date.UTC(year, month - 1, day))
@@ -211,7 +248,7 @@ async function executeRequest(e: React.FormEvent<HTMLFormElement>, query: string
         return these
     })
 
-    setData(datedData)
+    setResults(data)
 
     console.log(data)
 }

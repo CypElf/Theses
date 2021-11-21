@@ -34,11 +34,13 @@ async function main() {
     })
     
     app.get("/theses", async (req, res) => {
-        const { limit, query } = req.query as { limit: string | undefined, query: string | undefined }
+        const { limit, query, offset } = req.query as { limit: string | undefined, query: string | undefined, offset: string | undefined }
 
-        if (limit && isNaN(Number.parseInt(limit))) return res.sendStatus(StatusCodes.BAD_REQUEST)
+        if (limit && isNaN(Number.parseInt(limit)) || offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
 
-        const results = await thesesIndex.search(query, { limit: limit ? Number.parseInt(limit) : Number.MAX_SAFE_INTEGER })
+        const limitNumber = limit ? Number.parseInt(limit) : 20
+        const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0
+        const results = await thesesIndex.search(query, { limit: limitNumber, offset: offsetNumber })
 
         res.send(results)
     })
