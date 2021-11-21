@@ -76,12 +76,12 @@ export default function Home() {
                         data: [
                             {
                                 name: "Non terminées",
-                                y: results.hits.filter(these => !these.finished).length / results.hits.length * 100,
+                                y: (results.nbHits - results.nbFinished) / results.nbHits * 100,
                                 drilldown: "Chrome"
                             },
                             {
                                 name: "Terminées",
-                                y: results.hits.filter(these => these.finished).length / results.hits.length * 100,
+                                y: results.nbFinished / results.nbHits * 100,
                                 drilldown: "Terminées"
                             }
                         ]
@@ -91,12 +91,9 @@ export default function Home() {
                     enabled: false
                 }
             })
-    
-            const dates = results.hits.map(these => these.presentation_date).filter(t => t != null)
-            const years = [...new Set(dates.map(date => date.getFullYear()).filter(date => !isNaN(date)))].sort((a, b) => a - b)
-            const thesesPerYear = years.map(year => results.hits.filter(these => these.presentation_date?.getFullYear() === year).length)
-            console.log(thesesPerYear)
-    
+            
+            console.log("nb theses", [...results.thesesPerYear.values()].reduce((old, newV) => old + newV))
+
             setSplineChart({
                 chart: {
                     type: 'areaspline'
@@ -116,7 +113,7 @@ export default function Home() {
                         '#FFFFFF'
                 },
                 xAxis: {
-                    categories: years
+                    categories: [...results.thesesPerYear.keys()]
                 },
                 yAxis: {
                     title: {
@@ -137,7 +134,7 @@ export default function Home() {
                 },
                 series: [{
                     name: 'Thèses',
-                    data: thesesPerYear
+                    data: [...results.thesesPerYear.values()]
                 }]
             })
     
@@ -205,7 +202,7 @@ export default function Home() {
                 />
             </div>
             <div>
-                <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && `pour ${results.query}`}</h1>
+                <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
                 {
                     <nav>
 
@@ -228,7 +225,7 @@ export default function Home() {
 async function executeRequest(query: string, limit: number, offset: number, setResults: Dispatch<SetStateAction<QueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
     console.log(offset)
     
-    let data
+    let data: QueryResult
     try {
         const result = await fetch(`${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`)
         data = await result.json()
@@ -241,13 +238,23 @@ async function executeRequest(query: string, limit: number, offset: number, setR
     setError(null)
 
     data.hits = data.hits.map(these => {
+        if (these.inscription_date) {
+            these.inscription_date = new Date(these.inscription_date)
+        }
         if (these.presentation_date) {
-            const [day, month, year] = these.presentation_date.split("-")
-            these.presentation_date = new Date(Date.UTC(year, month - 1, day))
+            these.presentation_date = new Date(these.presentation_date)
+        }
+        if (these.upload_date) {
+            these.upload_date = new Date(these.upload_date)
+        }
+        if (these.update_date) {
+            these.update_date = new Date(these.update_date)
         }
 
         return these
     })
+
+    data.thesesPerYear = new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
 
     setResults(data)
 

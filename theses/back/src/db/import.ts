@@ -33,7 +33,7 @@ export async function thesesImportFromCsv(file: string, index: Index): Promise<b
             "update_date"
         ], mapValues: ({ header, index, value }: { header: string, index: number, value: string }) => {
             if (value.length === 0) return null
-
+            
             if (["authors", "authors_id", "directors", "directors_reversed", "directors_id"].includes(header)) {
                 return value.split(",").filter(v => v !== "")
             }
@@ -42,6 +42,15 @@ export async function thesesImportFromCsv(file: string, index: Index): Promise<b
             }
             if (header === "available_online") {
                 return value === "oui"
+            }
+            if (["inscription_date", "presentation_date", "upload_date", "update_date"].includes(header)) {
+                if (value) {
+                    const [day, month, year] = value.split("-")
+                    
+                    const date = new Date(Date.UTC(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day)))
+                    
+                    if (!isNaN(date.getTime())) return date.getTime()
+                }
             }
 
             return value
@@ -91,7 +100,7 @@ async function importAndCheck(data: object[], index: Index): Promise<boolean> {
 
     let status = (await getUpdates(index, updateIds)).map(update => update.status)
 
-    while (status.includes("processing")) {        
+    while (status.includes("processing")) {
         if (status.includes("failed")) {
             console.error("Failed to import in the database. Update dump:", (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
             return false

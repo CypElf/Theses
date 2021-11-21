@@ -10,13 +10,13 @@ export interface These {
     institution_id: string,
     domain: string,
     finished: boolean,
-    inscription_date: string | null,
-    presentation_date: Date,
+    inscription_date: Date | null,
+    presentation_date: Date | null,
     language: string | null,
     these_id: string,
     available_online: boolean,
-    upload_date: string,
-    update_date: string
+    upload_date: Date | null,
+    update_date: Date | null
 }
 
 export interface QueryResult {
@@ -26,7 +26,9 @@ export interface QueryResult {
     query: string,
     limit: number,
     offset: number,
-    processingTimeMs : number
+    processingTimeMs : number,
+    nbFinished: number,
+    thesesPerYear: Map<number, number>
 }
 
 export const apiUrl = "http://localhost:12000"

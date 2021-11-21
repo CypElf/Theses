@@ -34,15 +34,33 @@ async function main() {
     })
     
     app.get("/theses", async (req, res) => {
-        const { limit, query, offset } = req.query as { limit: string | undefined, query: string | undefined, offset: string | undefined }
+        const { query, offset } = req.query as { query: string | undefined, offset: string | undefined }
 
-        if (limit && isNaN(Number.parseInt(limit)) || offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
+        if (offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
 
-        const limitNumber = limit ? Number.parseInt(limit) : 20
-        const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0
-        const results = await thesesIndex.search(query, { limit: limitNumber, offset: offsetNumber })
+        const offsetNumber = offset ? Number.parseInt(offset) * 20 : 0
+        const results = await thesesIndex.search(query, { limit: 2000, offset: offsetNumber })
 
-        res.send(results)
+        const finishedCount = (await thesesIndex.search(query, { limit: 2000, filter: "finished = true" })) // 2000 is somehow arbitrary. It should in theory be 0, as we don't care about the results. But in practice, when the limit is too low, for a non identified reason, the search returns a nbHits way lower than the reality. This is VERY annoying and this applies for every search here
+
+        console.log("query:", query)
+
+        console.log(finishedCount.nbHits, "finished among", results.nbHits)
+
+        const minYear = 1970
+        const maxYear = 2021
+
+        const thesesPerYear = new Map()
+
+        for (let currentYear = minYear; currentYear <= maxYear; currentYear++) {
+            const yearBeginning = Date.UTC(currentYear, 0, 1)
+            const yearEnding = Date.UTC(currentYear, 11, 31, 23, 59, 59)
+            const thesesThisYear = (await thesesIndex.search(query, { limit: 500, filter: `presentation_date >= ${yearBeginning} AND presentation_date <= ${yearEnding}` })) // 500 instead of 200 as it's enough and a limit of 2000 in loop is very slow
+            thesesPerYear.set(currentYear, thesesThisYear.nbHits)
+        }
+
+        results.hits = results.hits.slice(0, 20)
+        res.send({ nbFinished: finishedCount.nbHits, thesesPerYear: Object.fromEntries(thesesPerYear), ...results })
     })
     
     app.get("/institutions", async (req, res) => {
