@@ -39,9 +39,9 @@ async function main() {
         if (offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
 
         const offsetNumber = offset ? Number.parseInt(offset) * 20 : 0
-        const results = await thesesIndex.search(query, { limit: 2000, offset: offsetNumber })
+        const results = await thesesIndex.search(query, { limit: 500, offset: offsetNumber })
 
-        const finishedCount = (await thesesIndex.search(query, { limit: 2000, filter: "finished = true" })) // 2000 is somehow arbitrary. It should in theory be 0, as we don't care about the results. But in practice, when the limit is too low, for a non identified reason, the search returns a nbHits way lower than the reality. This is VERY annoying and this applies for every search here
+        const finishedCount = (await thesesIndex.search(query, { limit: 500, filter: "finished = true" })) // 2000 is somehow arbitrary. It should in theory be 0, as we don't care about the results. But in practice, when the limit is too low, for a non identified reason, the search returns a nbHits way lower than the reality. This is VERY annoying and this applies for every search here
 
         console.log("query:", query)
 
@@ -60,6 +60,7 @@ async function main() {
         }
 
         results.hits = results.hits.slice(0, 20)
+        results.limit = 20
         res.send({ nbFinished: finishedCount.nbHits, thesesPerYear: Object.fromEntries(thesesPerYear), ...results })
     })
     
