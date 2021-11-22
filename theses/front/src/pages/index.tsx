@@ -35,10 +35,6 @@ export default function Home() {
     // }, [data])*
 
     useEffect(() => {
-        executeRequest(query, limit, 0, setResults, setError)
-    }, [query])
-
-    useEffect(() => {
         if (results) {
             setPieChart({
                 chart: {
@@ -175,11 +171,17 @@ export default function Home() {
         }
     }, [results])
 
+    console.log(maxPage, currentPage)
+
     return (<>
-    <div className="flex justify-center my-8">
+    <form className="flex justify-center items-center my-8">
         <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
         <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5 w-96 text-lg" onChange={e => setQuery(e.target.value) } type="text" id="query" name="query"></input>
-    </div>
+        <button onClick={e => {
+            e.preventDefault()
+            executeRequest(query, limit, 0, setResults, setError)
+        }} className="bg-theses-blue rounded-lg text-white px-4 py-2">Rechercher</button>
+    </form>
         {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
         {results && pieChart && splineChart &&
@@ -202,19 +204,26 @@ export default function Home() {
                 />
             </div>
             <div>
-                <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
-                {
-                    <nav>
+                <div className="flex justify-between m-3 mr-10">
+                    <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
+                    {
+                        <nav>
 
-                    {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, setResults, setError)}>{currentPage - 1}</a>}
-                    <a className="cursor-pointer text-xl text-theses-blue mx-3">{currentPage}</a>
-                    {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, setResults, setError)}>{currentPage + 1}</a>}
+                        {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, setResults, setError)}>{currentPage - 1}</a>}
+                        <a className="cursor-pointer text-xl text-theses-blue mx-3">{currentPage}</a>
+                        {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, setResults, setError)}>{currentPage + 1}</a>}
 
-                    </nav>
-                }
-                {results.hits.map(these => {
-                    return (<div key={these.id} className="m-3">
-                        {these.title} de {these.authors.join(", ")}
+                        </nav>
+                    }
+                </div>
+                {results.hits.map(these => {                    
+                    return (<div key={these.id} className="m-3 p-3 bg-theses-light-blue rounded-lg ">
+                        {these.title}<br/>
+                        <span className="text-sm mt-3">Thèse de <span className="text-theses-blue">{these.authors.join(", ")}</span>, supervisée par <span className="text-theses-blue">{these.directors.join(", ")}</span>
+                        {these.presentation_date &&
+                            <span> et soutenue le <span className="text-theses-blue">{these.presentation_date.toISOString().substring(0, 10).split("-").reverse().join("/")}</span></span>
+                        }
+                        </span>
                     </div>)
                 })}
             </div>

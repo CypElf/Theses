@@ -34,18 +34,15 @@ async function main() {
     })
     
     app.get("/theses", async (req, res) => {
-        const { query, offset } = req.query as { query: string | undefined, offset: string | undefined }
+        const { limit, query, offset } = req.query as { limit: string | undefined, query: string | undefined, offset: string | undefined }
 
-        if (offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
+        if (limit && (isNaN(Number.parseInt(limit)) || Number.parseInt(limit) < 0 || Number.parseInt(limit) > 20) && offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
 
-        const offsetNumber = offset ? Number.parseInt(offset) * 20 : 0
+        const limitNumber = limit ? Number.parseInt(limit) : 20
+        const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0
         const results = await thesesIndex.search(query, { limit: 500, offset: offsetNumber })
 
         const finishedCount = (await thesesIndex.search(query, { limit: 500, filter: "finished = true" })) // 2000 is somehow arbitrary. It should in theory be 0, as we don't care about the results. But in practice, when the limit is too low, for a non identified reason, the search returns a nbHits way lower than the reality. This is VERY annoying and this applies for every search here
-
-        console.log("query:", query)
-
-        console.log(finishedCount.nbHits, "finished among", results.nbHits)
 
         const minYear = 1970
         const maxYear = 2021
@@ -59,8 +56,8 @@ async function main() {
             thesesPerYear.set(currentYear, thesesThisYear.nbHits)
         }
 
-        results.hits = results.hits.slice(0, 20)
-        results.limit = 20
+        results.hits = results.hits.slice(0, limitNumber)
+        results.limit = limitNumber
         res.send({ nbFinished: finishedCount.nbHits, thesesPerYear: Object.fromEntries(thesesPerYear), ...results })
     })
     
