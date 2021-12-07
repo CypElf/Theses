@@ -10,13 +10,13 @@ export interface These {
     institution_id: string,
     domain: string,
     finished: boolean,
-    inscription_date: Date | null,
-    presentation_date: Date | null,
+    inscription_date: string | null,
+    presentation_date: string | null,
     language: string | null,
     these_id: string,
     available_online: boolean,
-    upload_date: Date | null,
-    update_date: Date | null
+    upload_date: string | null,
+    update_date: string | null
 }
 
 export interface QueryResult {

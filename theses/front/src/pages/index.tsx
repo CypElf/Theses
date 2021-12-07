@@ -216,12 +216,17 @@ export default function Home() {
                         </nav>
                     }
                 </div>
-                {results.hits.map(these => {                    
+                {results.hits.map(these => {
                     return (<div key={these.id} className="m-3 p-3 bg-theses-light-blue rounded-lg ">
-                        {these.title}<br/>
+                        {
+                            these.available_online ?
+                                <a href={`https://theses.fr/${these.these_id}/document`}>{these.title}</a>
+                            : these.title
+                        }
+                        <br/>
                         <span className="text-sm mt-3">Thèse de <span className="text-theses-blue">{these.authors.join(", ")}</span>, supervisée par <span className="text-theses-blue">{these.directors.join(", ")}</span>
                         {these.presentation_date &&
-                            <span> et soutenue le <span className="text-theses-blue">{these.presentation_date.toISOString().substring(0, 10).split("-").reverse().join("/")}</span></span>
+                            <span> et soutenue le <span className="text-theses-blue">{these.presentation_date}</span></span>
                         }
                         </span>
                     </div>)
@@ -236,7 +241,17 @@ async function executeRequest(query: string, limit: number, offset: number, setR
     
     let data: QueryResult
     try {
-        const result = await fetch(`${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`)
+        const result = await fetch(`${apiUrl}/theses`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                query,
+                limit,
+                offset
+            })
+        })
         data = await result.json()
     }
     catch {
@@ -248,16 +263,16 @@ async function executeRequest(query: string, limit: number, offset: number, setR
 
     data.hits = data.hits.map(these => {
         if (these.inscription_date) {
-            these.inscription_date = new Date(these.inscription_date)
+            these.inscription_date = getFormattedDate(new Date(these.inscription_date))
         }
         if (these.presentation_date) {
-            these.presentation_date = new Date(these.presentation_date)
+            these.presentation_date = getFormattedDate(new Date(these.presentation_date))
         }
         if (these.upload_date) {
-            these.upload_date = new Date(these.upload_date)
+            these.upload_date = getFormattedDate(new Date(these.upload_date))
         }
         if (these.update_date) {
-            these.update_date = new Date(these.update_date)
+            these.update_date = getFormattedDate(new Date(these.update_date))
         }
 
         return these
@@ -268,4 +283,8 @@ async function executeRequest(query: string, limit: number, offset: number, setR
     setResults(data)
 
     console.log(data)
+}
+
+function getFormattedDate(date: Date) {
+    return date.toISOString().substring(0, 10).split("-").reverse().join("/")
 }
