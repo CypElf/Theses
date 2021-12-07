@@ -6,6 +6,8 @@ import { apiUrl, QueryResult, These } from "../lib/api"
 
 export default function Home() {
     const [query, setQuery] = useState("")
+    const [year, setYear] = useState<number>()
+    const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
 
     const [results, setResults] = useState<QueryResult>()
@@ -25,7 +27,6 @@ export default function Home() {
     //             const mappedWithLonLat = await Promise.all(data.map(async these => {
     //                 const res = await fetch(`https://data.enseignementsup-recherche.gouv.fr/api/records/1.0/search/?dataset=fr-esr-principaux-etablissements-enseignement-superieur&rows=10&fileds=identifiant_idref&fields=identifiant_idref,coordonnees&q=${these.institution_id}`)
     //                 const institution_data = await res.json()
-    //                 console.log(institution_data)
     //                 these.lon = institution_data.records?.[0]?.fields?.coordonnees?.[0]
     //                 these.lat = institution_data.records?.[0]?.fields?.coordonnees?.[1]
     //                 return these
@@ -56,6 +57,12 @@ export default function Home() {
                         dataLabels: {
                             enabled: true,
                             format: '{point.name}: {point.y:.1f}%'
+                        },
+                        events: {
+                            click: ({ point: { name } }) => {
+                                setFinished(name === "Terminées")
+                                executeRequest(query, limit, 0, year, name === "Terminées", setResults, setError)
+                            }
                         }
                     }
                 },
@@ -88,8 +95,6 @@ export default function Home() {
                 }
             })
             
-            console.log("nb theses", [...results.thesesPerYear.values()].reduce((old, newV) => old + newV))
-
             setSplineChart({
                 chart: {
                     type: 'areaspline'
@@ -169,18 +174,34 @@ export default function Home() {
             //     }]
             // }
         }
-    }, [results])
-
-    console.log(maxPage, currentPage)
+    }, [results, query])
 
     return (<>
     <form className="flex justify-center items-center my-8">
         <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
         <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5 w-96 text-lg" onChange={e => setQuery(e.target.value) } type="text" id="query" name="query"></input>
-        <button onClick={e => {
+        
+        <label className="m-2" htmlFor="year">Year filter:</label> <input className="border-2 p-2 m-1" id="year" name="year" type="number" value={year} onChange={e => {
+            if (!isNaN(Number.parseInt(e.target.value))) {
+                setYear(Number.parseInt(e.target.value))
+            }
+            else if (e.target.value === "") setYear(undefined)
+        }}/>
+        <label className="m-2" htmlFor="finished">Finished filter: </label>
+        <select className="p-1 m-2" name="finished" id="finished" value={finished !== undefined ? (finished ? "true" : "false") : "none"} onChange={e => {
+            setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
+        }}>
+            <option value="none">-- aucune sélection --</option>
+            <option value="true">oui</option>
+            <option value="false">non</option>
+        </select>
+
+        <button className="bg-theses-blue rounded-lg text-white px-4 py-2" onClick={e => {
             e.preventDefault()
-            executeRequest(query, limit, 0, setResults, setError)
-        }} className="bg-theses-blue rounded-lg text-white px-4 py-2">Rechercher</button>
+            executeRequest(query, limit, 0, year, finished, setResults, setError)
+        }}>
+            Rechercher
+        </button>
     </form>
         {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
@@ -209,9 +230,9 @@ export default function Home() {
                     {
                         <nav>
 
-                        {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, setResults, setError)}>{currentPage - 1}</a>}
+                        {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, year, finished, setResults, setError)}>{currentPage - 1}</a>}
                         <a className="cursor-pointer text-xl text-theses-blue mx-3">{currentPage}</a>
-                        {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, setResults, setError)}>{currentPage + 1}</a>}
+                        {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, year, finished, setResults, setError)}>{currentPage + 1}</a>}
 
                         </nav>
                     }
@@ -236,9 +257,7 @@ export default function Home() {
     </>)
 }
 
-async function executeRequest(query: string, limit: number, offset: number, setResults: Dispatch<SetStateAction<QueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
-    console.log(offset)
-    
+async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<QueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
     let data: QueryResult
     try {
         const result = await fetch(`${apiUrl}/theses`, {
@@ -249,7 +268,9 @@ async function executeRequest(query: string, limit: number, offset: number, setR
             body: JSON.stringify({
                 query,
                 limit,
-                offset
+                offset,
+                year,
+                finished
             })
         })
         data = await result.json()
@@ -281,7 +302,6 @@ async function executeRequest(query: string, limit: number, offset: number, setR
     data.thesesPerYear = new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
 
     setResults(data)
-
     console.log(data)
 }
 

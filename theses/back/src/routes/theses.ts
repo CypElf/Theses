@@ -2,45 +2,39 @@ import { Express } from "express"
 import { StatusCodes } from "http-status-codes"
 import MeiliSearch from "meilisearch"
 
-interface FinishedFilter {
-    field: "finished"
-    value: boolean
-}
-
-interface DateFilter {
-    field: "year",
-    value: number
+interface ReqBody {
+    limit: string | undefined,
+    query: string | undefined,
+    offset: string | undefined,
+    year: number | undefined,
+    finished: boolean | undefined
 }
 
 module.exports = {
     setupRoute: (app: Express, meili: MeiliSearch) => {
         app.post("/theses", async (req, res) => {
-            const { limit, query, offset, filters } = req.body as { limit: string | undefined, query: string | undefined, offset: string | undefined, filters: (FinishedFilter | DateFilter)[] | undefined }
+            const { limit, query, offset, year, finished }: ReqBody = req.body
     
             if (limit && (isNaN(Number.parseInt(limit)) || Number.parseInt(limit) < 0 || Number.parseInt(limit) > 20) && offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.sendStatus(StatusCodes.BAD_REQUEST)
     
             const thesesIndex = meili.index("theses")
 
-            const meiliFilter = filters ? filters.map(filter => {
-                if (filter.field === "finished") {
-                    return "finished = " + filter.value.toString()
-                }
-                else /* if (filter.field === "presentation_date") */ {
-                    return getDateFilterForYear(filter.value)
-                }
-            }).join(" AND ") : null
+            const yearFilter = year !== undefined ? getDateFilterForYear(year) : undefined
+            const finishedFilter = finished !== undefined ? `finished = ${finished.toString()}` : undefined
+
+            const meiliFilter = [yearFilter, finishedFilter].filter(f => f !== undefined).join(" AND ")
 
             const limitNumber = limit ? Number.parseInt(limit) : 20
             const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0
             const results = await thesesIndex.search(query, {
                 limit: 200,
                 offset: offsetNumber,
-                filter: meiliFilter ?? undefined
+                filter: meiliFilter !== "" ? meiliFilter : undefined
             })
 
             let finishedCount
     
-            if (filters && filters.find(filter => filter.field === "finished" && filter.value === true)) {
+            if (finished !== undefined && finished === true) {
                 finishedCount = results.nbHits // we don't need to make an extra request to see how many are finished if we already asked for only those finished
             }
             else {
@@ -56,7 +50,10 @@ module.exports = {
             const thesesPerYear = new Map()
     
             for (let currentYear = minYear; currentYear <= maxYear; currentYear++) {
-                const thesesThisYear = (await thesesIndex.search(query, { limit: 100, filter: getDateFilterForYear(currentYear) })) // 200 instead of 500 as it's enough and a limit of 2000 in loop is very slow
+                const thesesThisYear = (await thesesIndex.search(query, {
+                    limit: 100, // 100 instead of 500 as it's enough and a limit of 2000 in loop is very slow
+                    filter: getDateFilterForYear(currentYear) + (meiliFilter ? (" AND " + meiliFilter) : "")
+                }))
                 thesesPerYear.set(currentYear, thesesThisYear.nbHits)
             }
     
