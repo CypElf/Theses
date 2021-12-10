@@ -131,6 +131,14 @@ export default function Home() {
                 plotOptions: {
                     areaspline: {
                         fillOpacity: 0.5
+                    },
+                    series: {
+                        events: {
+                            click: ({ point: { category } }) => {
+                                setYear(category)
+                                executeRequest(query, limit, 0, category, finished, setResults, setError)
+                            }
+                        }
                     }
                 },
                 series: [{
@@ -174,7 +182,7 @@ export default function Home() {
             //     }]
             // }
         }
-    }, [results, query])
+    }, [results, query, year, finished])
 
     return (<>
     <form className="flex justify-center items-center my-8">
