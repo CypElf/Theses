@@ -1,8 +1,17 @@
-import Hightcharts from "highcharts"
+import Highcharts from "highcharts"
+import HighchartsMap from "highcharts/modules/map"
+import France from "@highcharts/map-collection/countries/fr/fr-all.geo.json"
+import proj4 from "proj4"
 import HighchartsReact from "highcharts-react-official"
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { StaticImage } from "gatsby-plugin-image"
 import { apiUrl, QueryResult, These } from "../lib/api"
+
+HighchartsMap(Highcharts)
+
+if (window !== undefined) {
+    (window as any).proj4 = (window as any).proj4 || proj4
+}
 
 export default function Home() {
     const [query, setQuery] = useState("")
@@ -11,29 +20,15 @@ export default function Home() {
     const [error, setError] = useState<string>()
 
     const [results, setResults] = useState<QueryResult>()
+    const [institutions, setInstitutions] = useState()
 
+    const [mapChart, setMapChart] = useState<object>()
     const [pieChart, setPieChart] = useState<object>()
     let [splineChart, setSplineChart] = useState<object>()
 
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
     const currentPage = results ? results.offset / results.limit + 1 : 1
-
-    // let mapOptions = null
-
-    // useEffect(() => {
-    //     (async () => {
-    //         if (data) {
-    //             const mappedWithLonLat = await Promise.all(data.map(async these => {
-    //                 const res = await fetch(`https://data.enseignementsup-recherche.gouv.fr/api/records/1.0/search/?dataset=fr-esr-principaux-etablissements-enseignement-superieur&rows=10&fileds=identifiant_idref&fields=identifiant_idref,coordonnees&q=${these.institution_id}`)
-    //                 const institution_data = await res.json()
-    //                 these.lon = institution_data.records?.[0]?.fields?.coordonnees?.[0]
-    //                 these.lat = institution_data.records?.[0]?.fields?.coordonnees?.[1]
-    //                 return these
-    //             }))
-    //         }
-    //     })()
-    // }, [data])*
 
     useEffect(() => {
         if (results) {
@@ -146,41 +141,41 @@ export default function Home() {
                     data: [...results.thesesPerYear.values()]
                 }]
             })
-    
-            // mapOptions = {
-            //     chart: {
-            //         map: "countries/fr/"
-            //     },
-            
-            //     title: {
-            //         text: 'Thèses par région'
-            //     },
-            
-            //     subtitle: {
-            //         text: 'Source map: <a href="http://code.highcharts.com/mapdata/countries/fr/fr-all.js">France</a>'
-            //     },
-            
-            //     mapNavigation: {
-            //         enabled: true,
-            //         buttonOptions: {
-            //             verticalAlign: 'bottom'
-            //         }
-            //     },
-            
-            //     colorAxis: {
-            //         min: 0
-            //     },
-            
-            //     series: [{
-            //         name: 'Thèses',
-            //         type: 'mappoint',
-            //         data: data.map(these => these.institution_id),
-            //         color: 'silver',
-            //         nullColor: 'silver',
-            //         showInLegend: false,
-            //         enableMouseTracking: false
-            //     }]
-            // }
+
+            setMapChart({
+                chart: {
+                    map: "countries/fr/fr-all"
+                },
+                title: {
+                    text: "Répartition des thèses en France"
+                },
+                mapNavigation: {
+                    enabled: true,
+                    buttonOptions: {
+                        verticalAlign: 'bottom'
+                    }
+                },
+                colorAxis: {
+                    min: 0
+                },
+                series: [{
+                    name: "France",
+                    mapData: France,
+                    borderColor: "#A0A0A0",
+                    nullColor: "rgba(200, 200, 200, 0.3)",
+                    showInLegend: false
+                }, {
+                    name: "Thèses",
+                    type: "mappoint",
+                    data: [{
+                        name: "Paris",
+                        lat: 48.856614,
+                        lon: 2.3522219
+                    }],
+                    showInLegend: false,
+                    enableMouseTracking: false
+                }]
+            })
         }
     }, [results, query, year, finished])
 
@@ -219,17 +214,22 @@ export default function Home() {
                 <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
                 <div className="grid grid-cols-2">
                     <HighchartsReact
-                        highcharts={Hightcharts}
+                        highcharts={Highcharts}
                         options={pieChart}
                     />
                     <HighchartsReact
-                        highcharts={Hightcharts}
+                        highcharts={Highcharts}
                         options={pieChart}
                     />
                 </div>
                 <HighchartsReact
-                    highcharts={Hightcharts}
+                    highcharts={Highcharts}
                     options={splineChart}
+                />
+                <HighchartsReact
+                    constructorType="mapChart"
+                    highcharts={Highcharts}
+                    options={mapChart}
                 />
             </div>
             <div>

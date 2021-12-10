@@ -51,7 +51,7 @@ module.exports = {
     
             for (let currentYear = minYear; currentYear <= maxYear; currentYear++) {
                 const thesesThisYear = (await thesesIndex.search(query, {
-                    limit: 100, // 100 instead of 500 as it's enough and a limit of 2000 in loop is very slow
+                    limit: 100,
                     filter: getDateFilterForYear(currentYear) + (meiliFilter ? (" AND " + meiliFilter) : "")
                 }))
                 thesesPerYear.set(currentYear, thesesThisYear.nbHits)
@@ -59,6 +59,21 @@ module.exports = {
     
             results.hits = results.hits.slice(0, limitNumber)
             results.limit = limitNumber
+
+            const institutionsIds = await thesesIndex.search(query, {
+                attributesToRetrieve: ["institution_id"],
+                filter: meiliFilter !== "" ? meiliFilter : undefined,
+                limit: Number.MAX_SAFE_INTEGER
+            })
+
+            console.log(institutionsIds.hits.length)
+            console.log([...new Set(institutionsIds.hits.map(d => d.institution_id))].length)
+
+            // const geoIndex = meili.index("geo")
+            // geoIndex.search("", {
+            //     filter: results.
+            // })
+
             res.send({ nbFinished: finishedCount, thesesPerYear: Object.fromEntries(thesesPerYear), ...results })
         })
     }

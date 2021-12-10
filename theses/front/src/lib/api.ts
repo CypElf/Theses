@@ -28,7 +28,12 @@ export interface QueryResult {
     offset: number,
     processingTimeMs : number,
     nbFinished: number,
-    thesesPerYear: Map<number, number>
+    thesesPerYear: Map<number, number>,
+    positions: Map<string, {
+        name: string,
+        lat: number,
+        lng: number
+    }>
 }
 
 export const apiUrl = "http://localhost:12000"
