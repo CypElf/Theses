@@ -30,7 +30,14 @@ export interface ThesesQueryResult {
 export interface StatsQueryResult {
     finished: number,
     total: number,
-    thesesPerYear: Map<number, number>
+    thesesPerYear: Map<number, number>,
+    institutions: {
+        id: string,
+        name: string,
+        quantity: number,
+        lat: number,
+        lng: number
+    }[]
 }
 
 export const apiUrl = "http://localhost:12000"

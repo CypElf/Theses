@@ -94,6 +94,7 @@ export async function importAll(thesesFile: string, institutionsFile: string, re
         for (const these of theses) {
             promises.push(redis.json.set(`these:${i}`, ".", {
                 ...these,
+                institution_id: these.institution_id ?? "",
                 finished: these.finished ? 1 : 0,
                 available_online: these.available_online ? 1 : 0,
                 presentation_date: these.presentation_date ?? -1 // We need this field to never be null because it prevents RediSearch from indexing the whole associated JSON object. As we're going to perform timestamp comparisons on this, setting it to a negative value guarantees the object to be ignored by those.
@@ -131,6 +132,10 @@ export async function importAll(thesesFile: string, institutionsFile: string, re
             "$.presentation_date": {
                 type: SchemaFieldTypes.NUMERIC,
                 AS: "presentation_date"
+            },
+            "$.institution_id": {
+                type: SchemaFieldTypes.TEXT,
+                AS: "institution_id"
             }
         }, {
             ON: "JSON",

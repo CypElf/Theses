@@ -17,15 +17,33 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
             
             const quantity = await redis.ft.search("idx:theses", `@presentation_date:[${yearBeginning} ${yearEnding}]`)
 
-            console.log(year, quantity.total, yearBeginning, yearEnding)
-
             thesesPerYear.set(year, quantity.total)
         }
+
+        const institutions = await redis.ft.search("idx:institutions", "*", {
+            LIMIT: {
+                from: 0,
+                size: 1000 // there's only between 200 and 300 institutions in the dataset, so 1000 should be fine to get all of them even if it increases in the future
+            }
+        })
+
+        const formattedInstitutions = await Promise.all(institutions.documents.filter(institution => institution.value.id).map(async institution => {
+            const quantity = await redis.ft.search("idx:theses", `@institution_id:${institution.value.id}`)
+
+            return {
+                id: institution.value.id,
+                name: institution.value.name,
+                quantity: quantity.total,
+                lat: Number.parseFloat((institution.value.coords as string).split(",")[1]), 
+                lng: Number.parseFloat((institution.value.coords as string).split(",")[0])
+            }
+        }))
 
         res.send({
             finished: finishedStat.total,
             total: Number.parseInt(thesesInfo.numDocs),
-            thesesPerYear: Object.fromEntries(thesesPerYear)
+            thesesPerYear: Object.fromEntries(thesesPerYear),
+            institutions: formattedInstitutions.filter(institution => institution.quantity > 0)
         })
     })
 }

@@ -73,6 +73,13 @@ Return:
         "1971": number,
         // ...
         "2021": number
-    }
+    },
+    institutions: {
+        id: string,
+        name: string,
+        quantity: number,
+        lat: number,
+        lng: number
+    }[]
 }
 ```

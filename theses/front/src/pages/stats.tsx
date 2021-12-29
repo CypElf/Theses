@@ -6,6 +6,7 @@ import HighchartsReact from "highcharts-react-official"
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { StaticImage } from "gatsby-plugin-image"
 import { apiUrl, StatsQueryResult } from "../lib/api"
+import { Link } from "gatsby"
 
 HighchartsMap(Highcharts)
 
@@ -23,8 +24,6 @@ export default function Stats() {
     const [mapChart, setMapChart] = useState<object>()
     const [pieChart, setPieChart] = useState<object>()
     const [splineChart, setSplineChart] = useState<object>()
-
-    const limit = 10
 
     useEffect(() => {
         if (stats) {
@@ -139,21 +138,24 @@ export default function Stats() {
             })
 
             setMapChart({
+
                 chart: {
                     map: "countries/fr/fr-all"
                 },
+            
                 title: {
                     text: "Répartition des thèses en France"
                 },
+            
                 mapNavigation: {
-                    enabled: true,
-                    buttonOptions: {
-                        verticalAlign: 'bottom'
-                    }
+                    enabled: true
                 },
-                colorAxis: {
-                    min: 0
+            
+                tooltip: {
+                    headerFormat: "",
+                    pointFormat: "<b>{point.name}</b><br>Nombre de thèses soutenues ici : {point.quantity}"
                 },
+            
                 series: [{
                     name: "France",
                     mapData: France,
@@ -161,17 +163,22 @@ export default function Stats() {
                     nullColor: "rgba(200, 200, 200, 0.3)",
                     showInLegend: false
                 }, {
-                    name: "Thèses",
-                    type: "mappoint",
-                    data: [{
-                        name: "Paris",
-                        lat: 48.856614,
-                        lon: 2.3522219
-                    }],
+                    name: "Separators",
+                    type: "mapline",
+                    nullColor: "#707070",
                     showInLegend: false,
                     enableMouseTracking: false
-                }]
-            })
+                }, {
+                    type: "mappoint",
+                    name: "Cities",
+                    color: Highcharts.getOptions().colors[1],
+                    data: stats.institutions.map(institution => ({
+                        name: institution.name,
+                        lat: institution.lat,
+                        lon: institution.lng,
+                        quantity: institution.quantity
+                    })),
+                }]})
         }
     }, [stats, year, finished])
 
@@ -201,6 +208,7 @@ export default function Stats() {
             Rechercher
         </button>
     </form>
+    <Link to="/">Back to the search page</Link>
         {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
         {stats && pieChart && splineChart &&
@@ -249,11 +257,6 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
         thesesPerYear: new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
     })
     console.log(data)
-
-    console.log("sum:", [...{
-        ...data,
-        thesesPerYear: new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
-    }.thesesPerYear.values()].reduce((acc, val) => acc + val, 0))
 }
 
 function getFormattedDate(date: Date) {
