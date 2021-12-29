@@ -1,15 +1,11 @@
 import fs from "fs"
 import csv from "csv-parser"
-import { Index } from "meilisearch"
+import { Institution, RedisClientType, These } from "./schema"
+import { SchemaFieldTypes } from "redis"
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-const getUpdates = async (index: Index, updateIds: number[]) => await Promise.all(updateIds.map(async id => await index.getUpdateStatus(id)))
-
-export async function thesesImportFromCsv(file: string, index: Index): Promise<boolean> {
+async function parseThesesFromCsv(file: string): Promise<These[]> {
     if (!fs.existsSync(file)) {
-        console.error(`Failed to import theses from CSV, because the file ${file} was not found`)
-        return false
+        throw new Error(`Failed to import theses from CSV, because the file ${file} was not found`)
     }
 
     const stream = fs.createReadStream(file)
@@ -38,10 +34,10 @@ export async function thesesImportFromCsv(file: string, index: Index): Promise<b
                 return value.split(",").filter(v => v !== "")
             }
             if (header === "finished") {
-                return value === "soutenue"
+                return value === "soutenue" ? 1 : 0
             }
             if (header === "available_online") {
-                return value === "oui"
+                return value === "oui" ? 1 : 0
             }
             if (["inscription_date", "presentation_date", "upload_date", "update_date"].includes(header)) {
                 if (value) {
@@ -55,64 +51,121 @@ export async function thesesImportFromCsv(file: string, index: Index): Promise<b
 
             return value
         } }))
+    
+    const results: These[] = []
+    
+    let max1 = 0
+    let max2 = 0
 
-    console.log("Starting import, this can take a few minutes depending on the file size...")
-    
-    const results = []
-    let i = 0
-    
-    console.log("Parsing CSV...")
     for await (const data of stream) {
-        results.push({ id: i, ...data })
+        if (data.authors.includes("Thomas Fressin")) {
+            console.log(data)
+        }
+        try {
+            if (data.authors && data.authors.length > max1) max1 = data.authors.length
+            if (data.directors && data.directors.length > max2) max2 = data.directors.length
+        }
+        catch (err) {
+            console.error(err)
+        }
+        results.push(data)
+    }
+
+    console.log("max1", max1)
+    console.log("max2", max2)
+
+    return results
+}
+
+async function parseInstitutionsFromJson(file: string): Promise<Institution[]> {
+    if (!fs.existsSync(file)) {
+        throw new Error(`Failed to import geographic informations from JSON, because the file ${file} was not found`)
+    }
+
+    const placesData: Institution[] = require("../../" + file).map((place: any) => ({ id: place.fields.identifiant_idref, name: place.fields.uo_lib_officiel, coords: `${place.fields.coordonnees[1]},${place.fields.coordonnees[0]}` }))
+
+    return placesData
+}
+
+export async function importAll(thesesFile: string, institutionsFile: string, redis: RedisClientType) {
+    console.log("Parsing the theses...")
+    const theses = await parseThesesFromCsv(thesesFile)
+    console.log("Parsing the institutions...")
+    const institutions = await parseInstitutionsFromJson(institutionsFile)
+
+    console.log("Flushing the database...")
+    await redis.flushDb()
+    const promises = []
+
+    let i = 0
+    for (const these of theses) {
+        if (these.authors.includes("Thomas Fressin")) {
+            // these.title = "TESTESTEST"
+            // these.authors = ["TEST"]
+            these.directors = ["TEST", "TEST"]
+            // these.finished = 1
+            // these.presentation_institution = "TEST"
+            console.log(i, these)
+        }
+        promises.push(redis.json.set(`these:${i}`, ".", {
+            ...these
+        }))
         i++
     }
-        
-    console.log(`Inserting the ${i} rows in the database...`)
 
-    return await importAndCheck(results, index)
-}
+    console.log("number of theses inserted:", i)
 
-export async function geoImportFromJson(file: string, index: Index): Promise<boolean> {    
-    if (!fs.existsSync(file)) {
-        console.error(`Failed to import geography informations from JSON, because the file ${file} was not found`)
-        return false
-    }    
-
-    const placesData = require("../../" + file).map((place: any, i: number) => {
-        const { coordonnees, ...otherFields } = place.fields
-        
-        return { id: i, ...otherFields, _geo: { lat: Number.parseFloat(coordonnees[0]), lng: Number.parseFloat(coordonnees[1]) } }
-    })    
-
-    return await importAndCheck(placesData, index)
-}
-
-async function importAndCheck(data: object[], index: Index): Promise<boolean> {
-    await index.deleteAllDocuments()
-
-    const updateIds = []
-    
-    for (let j = 0; j < data.length; j += 50_000) { // split the data in groups of 50 000 to avoid sending a payload too big for MeiliSearch (slower but much more memory efficient)
-        
-        const pending = await index.addDocuments(data.slice(j, j + 50_000))
-        updateIds.push(pending.updateId)
+    i = 0
+    for (const institution of institutions) {
+        promises.push(redis.json.set(`institution:${i}`, ".", {
+            ...institution
+        }))
+        i++
     }
 
-    let status = (await getUpdates(index, updateIds)).map(update => update.status)
+    console.log("Waiting for all the insertions to complete...")
+    await Promise.all(promises)
 
-    while (status.includes("processing")) {
-        if (status.includes("failed")) {
-            console.error("Failed to import in the database. Update dump:", (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
-            return false
+    console.log("Creating the theses index...")
+    // @ts-ignore: next-line
+    await redis.ft.create("idx:theses", {
+        "$.title": {
+            type: SchemaFieldTypes.TEXT,
+            WEIGHT: 3,
+            AS: "title"
+        },
+        "$.presentation_institution": {
+            type: SchemaFieldTypes.TEXT,
+            AS: "presentation_institution"
+        },
+        "$.authors.[*]": {
+            type: SchemaFieldTypes.TEXT,
+            AS: "authors"
+        },
+        "$.directors.[*]": {
+            type: SchemaFieldTypes.TEXT,
+            AS: "directors"
+        },
+        "$.finished": {
+            type: SchemaFieldTypes.NUMERIC,
+            AS: "finished"
         }
-        await sleep(500) // wait for all the addDocuments to end
-        status = (await getUpdates(index, updateIds)).map(update => update.status)
-    }
+    }, {
+        ON: "JSON",
+        PREFIX: "these:"
+    })
 
-    if (status.includes("failed")) {
-        console.error("Failed to import in the database. Update dump:", (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
-        return false
-    }
+    console.log("Creating the institutions index...")
+    // @ts-ignore: next-line
+    await redis.ft.create("idx:institutions", {
+        "$.coords": {
+            type: SchemaFieldTypes.GEO,
+            AS: "coords"
+        }
+    }, {
+        ON: "JSON",
+        PREFIX: "institution:"
+    })
 
-    return true
+    console.log("All done.")
 }

@@ -1,16 +1,18 @@
-import { Express } from "express"
+import { FastifyInstance } from "fastify"
 import { StatusCodes } from "http-status-codes"
-import MeiliSearch from "meilisearch"
-import { thesesImportFromCsv } from "../db/import"
+import { RedisClientType } from "../db/schema"
+import { importAll } from "../db/import"
 
-module.exports = {
-    setupRoute: (app: Express, meili: MeiliSearch) => {
-        app.put("/import", async (req, res) => {
-            const thesesIndex = meili.index("theses")
+export default async function routes(app: FastifyInstance, { redis }: { redis: RedisClientType }) {
+    app.put("/import", async (req, res) => {
+        try {
+            await importAll("./res/theses.csv", "./res/institutions.json", redis)
+            res.status(StatusCodes.NO_CONTENT)
+        }
+        catch {
+            res.status(StatusCodes.INTERNAL_SERVER_ERROR)
+        }
 
-            const success = await thesesImportFromCsv("./res/theses.csv", thesesIndex)
-            if (success) res.sendStatus(StatusCodes.NO_CONTENT)
-            else res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
-        })
-    }
+        res.send()
+    })
 }
