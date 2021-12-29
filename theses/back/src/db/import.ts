@@ -1,7 +1,12 @@
 import fs from "fs"
 import csv from "csv-parser"
-import { Institution, RedisClientType, These } from "./schema"
 import { SchemaFieldTypes } from "redis"
+import MeiliSearch, { Index } from "meilisearch"
+import { Institution, RedisClientType, These } from "./schema"
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+const getUpdates = async (index: Index, updateIds: number[]) => await Promise.all(updateIds.map(async id => await index.getUpdateStatus(id)))
 
 async function parseThesesFromCsv(file: string): Promise<These[]> {
     if (!fs.existsSync(file)) {
@@ -34,10 +39,10 @@ async function parseThesesFromCsv(file: string): Promise<These[]> {
                 return value.split(",").filter(v => v !== "")
             }
             if (header === "finished") {
-                return value === "soutenue" ? 1 : 0
+                return value === "soutenue"
             }
             if (header === "available_online") {
-                return value === "oui" ? 1 : 0
+                return value === "oui"
             }
             if (["inscription_date", "presentation_date", "upload_date", "update_date"].includes(header)) {
                 if (value) {
@@ -53,26 +58,12 @@ async function parseThesesFromCsv(file: string): Promise<These[]> {
         } }))
     
     const results: These[] = []
-    
-    let max1 = 0
-    let max2 = 0
 
+    let i = 0
     for await (const data of stream) {
-        if (data.authors.includes("Thomas Fressin")) {
-            console.log(data)
-        }
-        try {
-            if (data.authors && data.authors.length > max1) max1 = data.authors.length
-            if (data.directors && data.directors.length > max2) max2 = data.directors.length
-        }
-        catch (err) {
-            console.error(err)
-        }
-        results.push(data)
+        results.push({ ...data, id: i })
+        i++
     }
-
-    console.log("max1", max1)
-    console.log("max2", max2)
 
     return results
 }
@@ -87,85 +78,108 @@ async function parseInstitutionsFromJson(file: string): Promise<Institution[]> {
     return placesData
 }
 
-export async function importAll(thesesFile: string, institutionsFile: string, redis: RedisClientType) {
+export async function importAll(thesesFile: string, institutionsFile: string, redis: RedisClientType, meili: MeiliSearch, db?: string) {
     console.log("Parsing the theses...")
     const theses = await parseThesesFromCsv(thesesFile)
     console.log("Parsing the institutions...")
     const institutions = await parseInstitutionsFromJson(institutionsFile)
 
-    console.log("Flushing the database...")
-    await redis.flushDb()
-    const promises = []
-
-    let i = 0
-    for (const these of theses) {
-        if (these.authors.includes("Thomas Fressin")) {
-            // these.title = "TESTESTEST"
-            // these.authors = ["TEST"]
-            these.directors = ["TEST", "TEST"]
-            // these.finished = 1
-            // these.presentation_institution = "TEST"
-            console.log(i, these)
+    if (db === "redis" || db === undefined) {
+        console.log("Flushing Redis...")
+        await redis.flushDb()
+        const promises = []
+    
+        console.log("Sending all the insertions requests to Redis...")
+        let i = 0
+        for (const these of theses) {
+            promises.push(redis.json.set(`these:${i}`, ".", {
+                ...these,
+                finished: these.finished ? 1 : 0,
+                available_online: these.available_online ? 1 : 0,
+                presentation_date: these.presentation_date ?? -1 // We need this field to never be null because it prevents RediSearch from indexing the whole associated JSON object. As we're going to perform timestamp comparisons on this, setting it to a negative value guarantees the object to be ignored by those.
+            }))
+            i++
         }
-        promises.push(redis.json.set(`these:${i}`, ".", {
-            ...these
-        }))
-        i++
+    
+        i = 0
+        for (const institution of institutions) {
+            promises.push(redis.json.set(`institution:${i}`, ".", {
+                ...institution
+            }))
+            i++
+        }
+    
+        console.log("Waiting for all the insertions to complete...")
+        await Promise.all(promises)
+    
+        console.log("Creating the theses index...")
+        // @ts-ignore: next-line
+        await redis.ft.create("idx:theses", {
+            "$.title": {
+                type: SchemaFieldTypes.TEXT,
+                WEIGHT: 3,
+                AS: "title"
+            },
+            "$.presentation_institution": {
+                type: SchemaFieldTypes.TEXT,
+                AS: "presentation_institution"
+            },
+            "$.finished": {
+                type: SchemaFieldTypes.NUMERIC,
+                AS: "finished"
+            },
+            "$.presentation_date": {
+                type: SchemaFieldTypes.NUMERIC,
+                AS: "presentation_date"
+            }
+        }, {
+            ON: "JSON",
+            PREFIX: "these:"
+        })
+    
+        console.log("Creating the institutions index...")
+        // @ts-ignore: next-line
+        await redis.ft.create("idx:institutions", {
+            "$.coords": {
+                type: SchemaFieldTypes.GEO,
+                AS: "coords"
+            }
+        }, {
+            ON: "JSON",
+            PREFIX: "institution:"
+        })
+    
+        console.log("All done for Redis.")
     }
 
-    console.log("number of theses inserted:", i)
-
-    i = 0
-    for (const institution of institutions) {
-        promises.push(redis.json.set(`institution:${i}`, ".", {
-            ...institution
-        }))
-        i++
+    if (db === "meilisearch" || db === undefined) {
+        const index = meili.index("theses")
+    
+        console.log("Flushing MeiliSearch...")
+        await index.deleteAllDocuments()
+        const updateIds = []
+    
+        console.log("Inserting the theses in MeiliSearch...")    
+        for (let j = 0; j < theses.length; j += 50_000) { // split the data in groups of 50 000 to avoid sending a payload too big for MeiliSearch (slower but much more memory efficient)
+            const pending = await index.addDocuments(theses.slice(j, j + 50_000))
+            updateIds.push(pending.updateId)
+        }
+    
+        let status = (await getUpdates(index, updateIds)).map(update => update.status)
+    
+        console.log("Waiting for MeiliSearch to process all the theses...")
+        while (status.includes("processing") || status.includes("enqueued")) {
+            if (status.includes("failed")) {
+                throw new Error("Failed to import in MeiliSearch. Update dump:" + (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+            }
+            await sleep(300) // wait for all the addDocuments to end
+            status = (await getUpdates(index, updateIds)).map(update => update.status)
+        }
+    
+        if (status.includes("failed")) {
+            throw new Error("Failed to import in MeiliSearch. Update dump:" + (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+        }
+    
+        console.log("All done for MeiliSearch.")
     }
-
-    console.log("Waiting for all the insertions to complete...")
-    await Promise.all(promises)
-
-    console.log("Creating the theses index...")
-    // @ts-ignore: next-line
-    await redis.ft.create("idx:theses", {
-        "$.title": {
-            type: SchemaFieldTypes.TEXT,
-            WEIGHT: 3,
-            AS: "title"
-        },
-        "$.presentation_institution": {
-            type: SchemaFieldTypes.TEXT,
-            AS: "presentation_institution"
-        },
-        "$.authors.[*]": {
-            type: SchemaFieldTypes.TEXT,
-            AS: "authors"
-        },
-        "$.directors.[*]": {
-            type: SchemaFieldTypes.TEXT,
-            AS: "directors"
-        },
-        "$.finished": {
-            type: SchemaFieldTypes.NUMERIC,
-            AS: "finished"
-        }
-    }, {
-        ON: "JSON",
-        PREFIX: "these:"
-    })
-
-    console.log("Creating the institutions index...")
-    // @ts-ignore: next-line
-    await redis.ft.create("idx:institutions", {
-        "$.coords": {
-            type: SchemaFieldTypes.GEO,
-            AS: "coords"
-        }
-    }, {
-        ON: "JSON",
-        PREFIX: "institution:"
-    })
-
-    console.log("All done.")
 }

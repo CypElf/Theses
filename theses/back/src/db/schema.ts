@@ -13,13 +13,14 @@ export interface These {
     institution_id: string,
     domain: string,
     finished: number,
-    inscription_date: string | null,
-    presentation_date: string | null,
+    inscription_date: number | null,
+    presentation_date: number | null,
     language: string | null,
     these_id: string,
     available_online: number,
     upload_date: string | null,
-    update_date: string | null
+    update_date: string | null,
+    id: number
 }
 
 export interface Institution {

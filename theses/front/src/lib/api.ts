@@ -19,21 +19,18 @@ export interface These {
     update_date: string | null
 }
 
-export interface QueryResult {
+export interface ThesesQueryResult {
     hits: These[],
     nbHits: number,
-    exhaustiveNbHits: boolean,
     query: string,
     limit: number,
     offset: number,
-    processingTimeMs : number,
-    nbFinished: number,
-    thesesPerYear: Map<number, number>,
-    positions: Map<string, {
-        name: string,
-        lat: number,
-        lng: number
-    }>
+}
+
+export interface StatsQueryResult {
+    finished: number,
+    total: number,
+    thesesPerYear: Map<number, number>
 }
 
 export const apiUrl = "http://localhost:12000"

@@ -4,10 +4,16 @@ import { createClient } from "redis"
 import dotenv from "dotenv"
 import { exit } from "process"
 import { readdirSync } from "fs"
+import MeiliSearch from "meilisearch"
 
 async function main() {
     dotenv.config()
 
+    if (!process.env["MEILISEARCH_AUTH"]) {
+        console.error("Missing the `MEILISEARCH_AUTH` environment variable (please specify it in the `.env` file)")
+        exit(1)
+    }
+    
     if (!process.env["REDIS_AUTH"]) {
         console.error("Missing the `REDIS_AUTH` environment variable (please specify it in the `.env` file)")
         exit(1)
@@ -20,6 +26,13 @@ async function main() {
     redis.on("error", err => console.error(err))
     await redis.connect()
 
+    const meili = new MeiliSearch({
+        host: "http://127.0.0.1:7700",
+        apiKey: process.env["MEILISEARCH_AUTH"]
+    })
+
+    await meili.health()
+
     const port = 12000
     
     const app = fastify()
@@ -30,7 +43,7 @@ async function main() {
     })
     
     for (const filename of readdirSync(__dirname + "/routes")) {
-        app.register(require(__dirname + "/routes/" + filename), { redis })
+        app.register(require(__dirname + "/routes/" + filename), { redis, meili })
     }
 }
 

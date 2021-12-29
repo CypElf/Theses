@@ -23,6 +23,7 @@
         "fastify": "^3.25.2",
         "fastify-cors": "^6.0.2",
         "http-status-codes": "^2.1.4",
+        "meilisearch": "^0.23.0",
         "redis": "^4.0.1"
     }
 }

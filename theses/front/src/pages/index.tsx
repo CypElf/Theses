@@ -1,17 +1,7 @@
-import Highcharts from "highcharts"
-import HighchartsMap from "highcharts/modules/map"
-import France from "@highcharts/map-collection/countries/fr/fr-all.geo.json"
-import proj4 from "proj4"
-import HighchartsReact from "highcharts-react-official"
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
+import React, { Dispatch, SetStateAction, useState } from "react"
 import { StaticImage } from "gatsby-plugin-image"
-import { apiUrl, QueryResult, These } from "../lib/api"
-
-HighchartsMap(Highcharts)
-
-if (window !== undefined) {
-    (window as any).proj4 = (window as any).proj4 || proj4
-}
+import { apiUrl, ThesesQueryResult } from "../lib/api"
+import { Link } from "gatsby"
 
 export default function Home() {
     const [query, setQuery] = useState("")
@@ -19,165 +9,11 @@ export default function Home() {
     const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
 
-    const [results, setResults] = useState<QueryResult>()
-    const [institutions, setInstitutions] = useState()
-
-    const [mapChart, setMapChart] = useState<object>()
-    const [pieChart, setPieChart] = useState<object>()
-    let [splineChart, setSplineChart] = useState<object>()
+    const [results, setResults] = useState<ThesesQueryResult>()
 
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
     const currentPage = results ? results.offset / results.limit + 1 : 1
-
-    useEffect(() => {
-        if (results) {
-            setPieChart({
-                chart: {
-                    type: "pie"
-                },
-                title: {
-                    text: "Thèses terminées"
-                },
-                accessibility: {
-                    announceNewData: {
-                        enabled: true
-                    },
-                    point: {
-                        valueSuffix: "%"
-                    }
-                },
-                plotOptions: {
-                    series: {
-                        dataLabels: {
-                            enabled: true,
-                            format: '{point.name}: {point.y:.1f}%'
-                        },
-                        events: {
-                            click: ({ point: { name } }) => {
-                                setFinished(name === "Terminées")
-                                executeRequest(query, limit, 0, year, name === "Terminées", setResults, setError)
-                            }
-                        }
-                    }
-                },
-    
-                tooltip: {
-                    headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
-                    pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:.2f}%</b> of total<br/>'
-                },
-    
-                series: [
-                    {
-                        name: "Thèses",
-                        colorByPoint: true,
-                        data: [
-                            {
-                                name: "Non terminées",
-                                y: (results.nbHits - results.nbFinished) / results.nbHits * 100,
-                                drilldown: "Chrome"
-                            },
-                            {
-                                name: "Terminées",
-                                y: results.nbFinished / results.nbHits * 100,
-                                drilldown: "Terminées"
-                            }
-                        ]
-                    }
-                ],
-                credits: {
-                    enabled: false
-                }
-            })
-            
-            setSplineChart({
-                chart: {
-                    type: 'areaspline'
-                },
-                title: {
-                    text: 'Thèses publiées au fil des années'
-                },
-                legend: {
-                    layout: 'vertical',
-                    align: 'left',
-                    verticalAlign: 'top',
-                    x: 150,
-                    y: 100,
-                    floating: true,
-                    borderWidth: 1,
-                    backgroundColor:
-                        '#FFFFFF'
-                },
-                xAxis: {
-                    categories: [...results.thesesPerYear.keys()]
-                },
-                yAxis: {
-                    title: {
-                        text: 'Nombre de thèses'
-                    }
-                },
-                tooltip: {
-                    shared: true,
-                    valueSuffix: ' units'
-                },
-                credits: {
-                    enabled: false
-                },
-                plotOptions: {
-                    areaspline: {
-                        fillOpacity: 0.5
-                    },
-                    series: {
-                        events: {
-                            click: ({ point: { category } }) => {
-                                setYear(category)
-                                executeRequest(query, limit, 0, category, finished, setResults, setError)
-                            }
-                        }
-                    }
-                },
-                series: [{
-                    name: 'Thèses',
-                    data: [...results.thesesPerYear.values()]
-                }]
-            })
-
-            setMapChart({
-                chart: {
-                    map: "countries/fr/fr-all"
-                },
-                title: {
-                    text: "Répartition des thèses en France"
-                },
-                mapNavigation: {
-                    enabled: true,
-                    buttonOptions: {
-                        verticalAlign: 'bottom'
-                    }
-                },
-                colorAxis: {
-                    min: 0
-                },
-                series: [{
-                    name: "France",
-                    mapData: France,
-                    borderColor: "#A0A0A0",
-                    nullColor: "rgba(200, 200, 200, 0.3)",
-                    showInLegend: false
-                }, {
-                    name: "Thèses",
-                    type: "mappoint",
-                    data: [{
-                        name: "Paris",
-                        lat: 48.856614,
-                        lon: 2.3522219
-                    }],
-                    showInLegend: false,
-                    enableMouseTracking: false
-                }]
-            })
-        }
-    }, [results, query, year, finished])
 
     return (<>
     <form className="flex justify-center items-center my-8">
@@ -206,33 +42,10 @@ export default function Home() {
             Rechercher
         </button>
     </form>
+    <Link to="/stats">Go to the stats page</Link>
         {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
-        {results && pieChart && splineChart &&
-        <div className="grid grid-cols-3">
-            <div className="col-span-2">
-                <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
-                <div className="grid grid-cols-2">
-                    <HighchartsReact
-                        highcharts={Highcharts}
-                        options={pieChart}
-                    />
-                    <HighchartsReact
-                        highcharts={Highcharts}
-                        options={pieChart}
-                    />
-                </div>
-                <HighchartsReact
-                    highcharts={Highcharts}
-                    options={splineChart}
-                />
-                <HighchartsReact
-                    constructorType="mapChart"
-                    highcharts={Highcharts}
-                    options={mapChart}
-                />
-            </div>
-            <div>
+        {results && <div>
                 <div className="flex justify-between m-3 mr-10">
                     <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
                     {
@@ -260,35 +73,28 @@ export default function Home() {
                         </span>
                     </div>)
                 })}
-            </div>
-        </div>}
+            </div>}
     </>)
 }
 
-async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<QueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
-    let data: QueryResult
+async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<ThesesQueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
+    let data: ThesesQueryResult
     try {
-        const result = await fetch(`${apiUrl}/theses`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                query,
-                limit,
-                offset,
-                year,
-                finished
-            })
-        })
+        let url = `${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`
+        if (year !== undefined) url += `&year=${year}`
+        if (finished !== undefined) url += `&finished=${finished}`
+
+        const result = await fetch(url)
         data = await result.json()
     }
     catch {
         setResults(undefined)
-        return setError("A server error occured.")
+        return setError("The request to the API failed.")
     }
 
     setError(null)
+
+    console.log(data)
 
     data.hits = data.hits.map(these => {
         if (these.inscription_date) {
@@ -306,8 +112,6 @@ async function executeRequest(query: string, limit: number, offset: number, year
 
         return these
     })
-
-    data.thesesPerYear = new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
 
     setResults(data)
     console.log(data)
