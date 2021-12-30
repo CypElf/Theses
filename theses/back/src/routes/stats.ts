@@ -52,7 +52,7 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
         })
 
         const formattedInstitutions = await Promise.all(institutions.documents.filter(institution => institution.value.id).map(async institution => {
-            const quantity = await redis.ft.search("idx:theses", `@institution_id:${institution.value.id}`)
+            const quantity = await redis.ft.search("idx:theses", `@institution_id:${institution.value.id} ${searchFilter}`)
 
             return {
                 id: institution.value.id,
