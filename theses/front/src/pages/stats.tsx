@@ -240,7 +240,12 @@ export default function Stats() {
 async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, year?: number, finished?: boolean ) {
     let data: StatsQueryResult
     try {
-        const url = `${apiUrl}/stats`
+        let url = `${apiUrl}/stats`
+        if (year !== undefined) url += `?year=${year}`
+        if (finished !== undefined) {
+            if (year) url += `&finished=${finished}`
+            else url += `?finished=${finished}`
+        }
 
         const result = await fetch(url)
         data = await result.json()

@@ -1,10 +1,34 @@
 import { FastifyInstance } from "fastify"
+import { StatusCodes } from "http-status-codes"
 import { RedisClientType } from "../db/schema"
+
+interface StatsReqQuery {
+    year?: string,
+    finished?: string
+}
 
 export default async function routes(app: FastifyInstance, { redis }: { redis: RedisClientType }) {
     app.get("/stats", async (req, res) => {
-        const finishedStat = await redis.ft.search("idx:theses", "@finished:[1 1]")
-        const thesesInfo = await redis.ft.info("idx:theses")
+        console.log("Incoming stats request")
+        const { year: yearStr, finished: finishedStr } = req.query as StatsReqQuery
+
+        if (yearStr !== undefined && isNaN(Number.parseInt(yearStr)) || finishedStr !== undefined && finishedStr !== "true" && finishedStr !== "false") res.status(StatusCodes.BAD_REQUEST)
+
+        const year = yearStr ? Number.parseInt(yearStr) : undefined
+        const finished = finishedStr !== undefined ? finishedStr === "true" : undefined
+
+        const hasOptions = year !== undefined || finished !== undefined
+
+        const optionalFinishedFilter = finished !== undefined ? `@finished:[${finished ? 1 : 0} ${finished ? 1 : 0}]` : ""
+        const optionalYearFilter = year ? `@presentation_date:[${Date.UTC(year, 0, 1)} ${Date.UTC(year, 11, 31, 23, 59, 59)}]` : ""
+
+        const searchFilter = optionalYearFilter + (optionalFinishedFilter ? (" " + optionalFinishedFilter) : "")
+
+        const finishedStat = (await redis.ft.search("idx:theses", `@finished:[1 1] ${searchFilter}`)).total
+
+        const totalStat = !hasOptions
+            ? Number.parseInt((await redis.ft.info("idx:theses")).numDocs)
+            : (await redis.ft.search("idx:theses", searchFilter)).total
 
         const minYear = 1970
         const maxYear = (new Date()).getFullYear()
@@ -15,7 +39,7 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
             const yearBeginning = Date.UTC(year, 0, 1)
             const yearEnding = Date.UTC(year, 11, 31, 23, 59, 59)
             
-            const quantity = await redis.ft.search("idx:theses", `@presentation_date:[${yearBeginning} ${yearEnding}]`)
+            const quantity = await redis.ft.search("idx:theses", `@presentation_date:[${yearBeginning} ${yearEnding}] ${searchFilter}`)
 
             thesesPerYear.set(year, quantity.total)
         }
@@ -40,8 +64,8 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
         }))
 
         res.send({
-            finished: finishedStat.total,
-            total: Number.parseInt(thesesInfo.numDocs),
+            finished: finishedStat,
+            total: totalStat,
             thesesPerYear: Object.fromEntries(thesesPerYear),
             institutions: formattedInstitutions.filter(institution => institution.quantity > 0)
         })

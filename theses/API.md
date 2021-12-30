@@ -3,11 +3,11 @@
 ## GET /theses
 
 Query parameters:
-- query
-- limit
-- offset
-- year
-- finished
+- query (string)
+- limit (number)
+- offset (number)
+- year (number)
+- finished (boolean)
 
 Return:
 
@@ -43,9 +43,9 @@ Return:
 ## GET /institutions
 
 Query parameters:
-- lat
-- lng
-- rad
+- lat (number)
+- lng (number)
+- rad (number)
 
 Return:
 
@@ -61,6 +61,10 @@ Return:
 ```
 
 ## GET /stats
+
+Query parameters:
+- year (number)
+- finished (boolean)
 
 Return:
 

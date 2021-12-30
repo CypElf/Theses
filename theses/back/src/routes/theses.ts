@@ -4,11 +4,11 @@ import MeiliSearch from "meilisearch"
 import { RedisClientType } from "../db/schema"
 
 interface ThesesReqQuery {
-    limit: string | undefined,
-    query: string | undefined,
-    offset: string | undefined,
-    year: string | undefined,
-    finished: string | undefined
+    limit?: string,
+    query?: string,
+    offset?: string,
+    year?: string,
+    finished?: string
 }
 
 function getDateFilterForYear(year: number) {
