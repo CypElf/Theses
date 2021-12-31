@@ -4,9 +4,11 @@ module.exports = {
     title: "theses",
   },
   plugins: [
-      "gatsby-plugin-react-helmet",
-      "gatsby-plugin-image",
-      "gatsby-plugin-sharp",
-      "gatsby-transformer-sharp"
-    ],
-}
+    "gatsby-plugin-postcss",
+    "gatsby-plugin-react-helmet",
+    "gatsby-plugin-image",
+    "gatsby-plugin-sharp",
+    "gatsby-transformer-sharp",
+    "gatsby-theme-material-ui"
+  ],
+};
