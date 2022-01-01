@@ -1,13 +1,17 @@
 import React, { Dispatch, SetStateAction, useState } from "react"
 import { Link } from "gatsby"
 import { StaticImage } from "gatsby-plugin-image"
+import { Button, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField } from "@mui/material"
+import { LoadingButton } from "@mui/lab"
+import SearchIcon from "@mui/icons-material/Search"
 import { apiUrl, ThesesQueryResult } from "../lib/api"
 
 export default function Home() {
     const [query, setQuery] = useState("")
-    const [year, setYear] = useState<number>()
+    const [year, setYear] = useState("none")
     const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
+    const [loading, setLoading] = useState(false)
 
     const [results, setResults] = useState<ThesesQueryResult>()
 
@@ -15,69 +19,91 @@ export default function Home() {
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
     const currentPage = results ? results.offset / results.limit + 1 : 1
 
-    return (<>
-        <form className="flex justify-center items-center my-8">
-            <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
-            <input className="border-2 border-theses-blue rounded-xl px-3 py-2 mr-5 w-96 text-lg" onChange={e => setQuery(e.target.value) } type="text" id="query" name="query"></input>
-            
-            <label className="m-2" htmlFor="year">Year filter:</label> <input className="border-2 p-2 m-1" id="year" name="year" type="number" value={year} onChange={e => {
-                if (!isNaN(Number.parseInt(e.target.value))) {
-                    setYear(Number.parseInt(e.target.value))
-                }
-                else if (e.target.value === "") setYear(undefined)
-            }}/>
-            <label className="m-2" htmlFor="finished">Finished filter: </label>
-            <select className="p-1 m-2" name="finished" id="finished" value={finished !== undefined ? (finished ? "true" : "false") : "none"} onChange={e => {
-                setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
-            }}>
-                <option value="none">-- aucune sélection --</option>
-                <option value="true">oui</option>
-                <option value="false">non</option>
-            </select>
-
-            <button className="bg-theses-blue rounded-lg text-white px-4 py-2" onClick={e => {
-                e.preventDefault()
-                executeRequest(query, limit, 0, year, finished, setResults, setError)
-            }}>
-                Rechercher
-            </button>
-        </form>
-        <Link to="/stats">Go to the stats page</Link>
-        {error && <p className="text-2xl text-center text-red-800">{error}</p>}
-
-        {results && <div>
-            <div className="flex justify-between m-3 mr-10">
-                <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
-                {
-                    <nav>
-
-                    {currentPage > 1 && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage - 2, year, finished, setResults, setError)}>{currentPage - 1}</a>}
-                    <a className="cursor-pointer text-xl text-theses-blue mx-3">{currentPage}</a>
-                    {currentPage < maxPage && <a className="cursor-pointer" onClick={e => executeRequest(query, limit, currentPage, year, finished, setResults, setError)}>{currentPage + 1}</a>}
-
-                    </nav>
-                }
+    return (
+        <div className="flex justify-between">
+            <div className="mx-auto mt-7 w-fit">
+                <StaticImage className="mx-10" src="../img/theses.gif" alt="logo de theses.fr"/>
             </div>
-            {results.hits.map(these => {
-                return (<div key={these.id} className="m-3 p-3 bg-theses-light-blue rounded-lg ">
-                    {
-                        these.available_online ?
-                            <a href={`https://theses.fr/${these.these_id}/document`}>{these.title}</a>
-                        : these.title
-                    }
-                    <br/>
-                    <span className="text-sm mt-3">Thèse de <span className="text-theses-blue">{these.authors.join(", ")}</span>, supervisée par <span className="text-theses-blue">{these.directors.join(", ")}</span>
-                    {these.presentation_date &&
-                        <span> et soutenue le <span className="text-theses-blue">{these.presentation_date}</span></span>
-                    }
-                    </span>
-                </div>)
-            })}
-        </div>}
-    </>)
+            <div className="flex-1">
+                <Container maxWidth="md">
+                    <TextField label="Rechercher" margin="normal" fullWidth onChange={e => setQuery(e.target.value) } />
+                </Container>
+
+
+                <form className="w-1/3 flex justify-around items-center m-auto">
+                    <FormControl>
+                        <InputLabel id="finishedInput">Terminées ?</InputLabel>
+                        <Select
+                            label="Terminées ?"
+                            labelId="finishedInput"
+                            value={finished !== undefined ? (finished ? "true" : "false") : "none"}
+                            onChange={e => {
+                                setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
+                            }}
+                        >
+                            <MenuItem value="none">Peu importe</MenuItem>
+                            <MenuItem value="true">Oui</MenuItem>
+                            <MenuItem value="false">Non</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl>
+                        <InputLabel id="yearInput">Année</InputLabel>
+                        <Select
+                            label="Année"
+                            labelId="yearInput"
+                            value={year}
+                            onChange={e => {
+                                if (typeof e.target.value === "string") setYear("none")
+                                else setYear(e.target.value)
+                            }}
+                        >
+                            <MenuItem value="none">Peu importe</MenuItem>
+                            {[...[...Array((new Date()).getFullYear() - 1970)].keys()].map(i => i + 1970).map(year => {
+                                return <MenuItem key={year} value={year}>{year}</MenuItem>
+                            })}
+                        </Select>
+                    </FormControl>
+
+                    <LoadingButton variant="contained" endIcon={<SearchIcon/>} size="large" loading={loading} loadingPosition="end" onClick={e => {
+                        executeRequest(query, limit, 0, year === "none" ? undefined: Number.parseInt(year), finished, setResults, setError, setLoading)
+                    }}>
+                        Rechercher
+                    </LoadingButton>
+                </form>
+                <Link to="/stats">Go to the stats page</Link>
+                {error && <p className="text-2xl text-center text-red-800">{error}</p>}
+
+                {results && <div>
+                    <div className="flex justify-between m-3 mr-10">
+                        <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
+                    </div>
+                    {results.hits.map(these => {
+                        return (<div key={these.id} className="m-3 p-3 bg-theses-light-blue rounded-lg ">
+                            {
+                                these.available_online ?
+                                    <a href={`https://theses.fr/${these.these_id}/document`}>{these.title}</a>
+                                : these.title
+                            }
+                            <br/>
+                            <span className="text-sm mt-3">Thèse de <span className="text-theses-blue">{these.authors.join(", ")}</span>, supervisée par <span className="text-theses-blue">{these.directors.join(", ")}</span>
+                            {these.presentation_date &&
+                                <span> et soutenue le <span className="text-theses-blue">{these.presentation_date}</span></span>
+                            }
+                            </span>
+                        </div>)
+                    })}
+
+                    <div className="mb-10 mt-5">
+                        <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined: Number.parseInt(year), finished, setResults, setError, setLoading)}/>
+                    </div>
+                </div>}
+            </div>
+        </div>
+    )
 }
 
-async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<ThesesQueryResult>>, setError: Dispatch<SetStateAction<string | null>>) {
+async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<ThesesQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>) {
+    setLoading(true)
     let data: ThesesQueryResult
     try {
         let url = `${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`
@@ -89,6 +115,7 @@ async function executeRequest(query: string, limit: number, offset: number, year
     }
     catch {
         setResults(undefined)
+        setLoading(false)
         return setError("The request to the API failed.")
     }
 
@@ -115,6 +142,7 @@ async function executeRequest(query: string, limit: number, offset: number, year
 
     setResults(data)
     console.log(data)
+    setLoading(false)
 }
 
 function getFormattedDate(date: Date) {
