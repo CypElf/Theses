@@ -1,7 +1,7 @@
 import React, { Dispatch, SetStateAction, useState } from "react"
 import { Link } from "gatsby"
 import { StaticImage } from "gatsby-plugin-image"
-import { Container, Divider, FormControl, InputLabel, List, ListItem, ListItemButton, ListItemIcon, ListItemText, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
+import { Button, Card, CardActions, CardContent, Container, Divider, FormControl, InputLabel, List, ListItem, ListItemButton, ListItemIcon, ListItemText, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import SchoolIcon from "@mui/icons-material/School"
@@ -24,39 +24,39 @@ export default function Home() {
 
     return (
         <div className="flex justify-between">
-            <div className="mx-auto mt-7 w-fit">
-                <StaticImage className="mx-10" src="../img/theses.gif" alt="logo de theses.fr"/>
+            <div className="mx-auto mt-7 w-fit h-fit sticky top-7">
+                <StaticImage className="mx-10" src="../img/theses.gif" alt="logo de theses.fr" />
 
                 <div className="mx-auto mt-16 w-64 font-bold">Thèses</div>
                 <List>
                     <ListItem sx={{ m: "auto", width: 256 }}>
                         <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/">
                             <ListItemIcon>
-                                <SchoolIcon/>
+                                <SchoolIcon />
                             </ListItemIcon>
-                            <ListItemText primary="Parcourir"/>
+                            <ListItemText primary="Parcourir" />
                         </ListItemButton>
                     </ListItem>
                     <ListItem sx={{ m: "auto", width: 256 }}>
                         <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/stats">
                             <ListItemIcon>
-                                <QueryStatsIcon/>
+                                <QueryStatsIcon />
                             </ListItemIcon>
-                            <ListItemText primary="Statistiques"/>
+                            <ListItemText primary="Statistiques" />
                         </ListItemButton>
                     </ListItem>
                 </List>
 
-                <Divider sx={{ mx: 4 }}/>
+                <Divider sx={{ mx: 4 }} />
 
                 <div className="mx-auto mt-7 w-64 font-bold">Autres</div>
                 <List>
                     <ListItem sx={{ m: "auto", width: 256 }}>
                         <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/about">
                             <ListItemIcon>
-                                <InfoIcon/>
+                                <InfoIcon />
                             </ListItemIcon>
-                            <ListItemText primary="A propos"/>
+                            <ListItemText primary="A propos" />
                         </ListItemButton>
                     </ListItem>
                 </List>
@@ -64,7 +64,7 @@ export default function Home() {
             <div className="flex-1">
                 <form>
                     <Container maxWidth="md">
-                        <TextField label="Rechercher" margin="normal" fullWidth onChange={e => setQuery(e.target.value) } />
+                        <TextField label="Rechercher" margin="normal" fullWidth onChange={e => setQuery(e.target.value)} />
                     </Container>
 
                     <div className="w-1/3 flex justify-around items-center m-auto">
@@ -101,14 +101,13 @@ export default function Home() {
                             </Select>
                         </FormControl>
 
-                        <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon/>} size="large" loading={loading} loadingPosition="end" onClick={e => {
-                            executeRequest(query, limit, 0, year === "none" ? undefined: Number.parseInt(year), finished, setResults, setError, setLoading)
+                        <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon />} size="large" loading={loading} loadingPosition="end" onClick={e => {
+                            executeRequest(query, limit, 0, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)
                         }}>
                             Rechercher
                         </LoadingButton>
                     </div>
                 </form>
-                <Link to="/stats">Go to the stats page</Link>
                 {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
                 {results && <div>
@@ -116,23 +115,29 @@ export default function Home() {
                         <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
                     </div>
                     {results.hits.map(these => {
-                        return (<div key={these.id} className="m-3 p-3 bg-theses-light-blue rounded-lg ">
-                            {
-                                these.available_online ?
-                                    <a href={`https://theses.fr/${these.these_id}/document`}>{these.title}</a>
-                                : these.title
-                            }
-                            <br/>
-                            <span className="text-sm mt-3">Thèse de <span className="text-theses-blue">{these.authors.join(", ")}</span>, supervisée par <span className="text-theses-blue">{these.directors.join(", ")}</span>
-                            {these.presentation_date &&
-                                <span> et soutenue le <span className="text-theses-blue">{these.presentation_date}</span></span>
-                            }
-                            </span>
-                        </div>)
+                        return (
+                            <Card key={these.id} sx={{ mr: 15, my: 5 }}>
+                                <CardContent>
+                                    <Typography fontSize={20} component="div" gutterBottom>
+                                        {these.title}
+                                    </Typography>
+                                    <Typography variant="body1" color="text.secondary" component="div">
+                                        Thèse de {these.authors.join(", ")} supervisée par {these.directors.join(", ")} {these.presentation_date &&
+                                        <> et soutenue le {these.presentation_date}</>
+                                    }
+                                    </Typography>
+                                </CardContent>
+                                {
+                                    these.available_online && <CardActions>
+                                        <Button size="small"><a href={`https://theses.fr/${these.these_id}/document`}>Consulter en ligne</a></Button>
+                                    </CardActions>
+                                }
+                            </Card>
+                        )
                     })}
 
                     <div className="mb-10 mt-5">
-                        <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined: Number.parseInt(year), finished, setResults, setError, setLoading)}/>
+                        <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)} />
                     </div>
                 </div>}
             </div>
