@@ -2,7 +2,7 @@ import fs from "fs"
 import csv from "csv-parser"
 import { createClient, SchemaFieldTypes } from "redis"
 import MeiliSearch, { Index } from "meilisearch"
-import { Institution, RedisClientType, These } from "./schema"
+import { Institution, These } from "./schema"
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -203,10 +203,13 @@ async function importAll(db?: string) {
     
         console.log("All done for MeiliSearch.")
     }
-
-    if (db !== undefined && db !== "redis" && db !== "meilisearch") {
-        console.error("Wrong db argument")
-    }
 }
 
-importAll(process.argv[2])
+const db = process.argv[2]?.toLowerCase()
+
+if (db !== undefined && db !== "redis" && db !== "meilisearch") {
+    console.error("Wrong db argument")
+}
+else {
+    importAll(db)
+}
