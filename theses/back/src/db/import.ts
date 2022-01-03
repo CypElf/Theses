@@ -1,6 +1,6 @@
 import fs from "fs"
 import csv from "csv-parser"
-import { SchemaFieldTypes } from "redis"
+import { createClient, SchemaFieldTypes } from "redis"
 import MeiliSearch, { Index } from "meilisearch"
 import { Institution, RedisClientType, These } from "./schema"
 
@@ -61,7 +61,7 @@ async function parseThesesFromCsv(file: string): Promise<These[]> {
 
     let i = 0
     for await (const data of stream) {
-        results.push({ ...data, id: i })
+        results.push({ id: i, ...data })
         i++
     }
 
@@ -78,13 +78,22 @@ async function parseInstitutionsFromJson(file: string): Promise<Institution[]> {
     return placesData
 }
 
-export async function importAll(thesesFile: string, institutionsFile: string, redis: RedisClientType, meili: MeiliSearch, db?: string) {
+async function importAll(db?: string) {
+    const thesesFile = "./res/theses.csv"
+    const institutionsFile = "./res/institutions.json"
+
     console.log("Parsing the theses...")
     const theses = await parseThesesFromCsv(thesesFile)
-    console.log("Parsing the institutions...")
-    const institutions = await parseInstitutionsFromJson(institutionsFile)
 
     if (db === "redis" || db === undefined) {
+        const redis = createClient({
+            password: process.env["REDIS_AUTH"]
+        })
+        await redis.connect()
+
+        console.log("Parsing the institutions...")
+        const institutions = await parseInstitutionsFromJson(institutionsFile)
+
         console.log("Flushing Redis...")
         await redis.flushDb()
         const promises = []
@@ -158,13 +167,18 @@ export async function importAll(thesesFile: string, institutionsFile: string, re
     }
 
     if (db === "meilisearch" || db === undefined) {
+        const meili = new MeiliSearch({
+            host: "http://127.0.0.1:7700",
+            apiKey: process.env["MEILISEARCH_AUTH"]
+        })
+        
         const index = meili.index("theses")
     
         console.log("Flushing MeiliSearch...")
         await index.deleteAllDocuments()
         const updateIds = []
     
-        console.log("Inserting the theses in MeiliSearch...")    
+        console.log("Inserting the theses in MeiliSearch...")
         for (let j = 0; j < theses.length; j += 50_000) { // split the data in groups of 50 000 to avoid sending a payload too big for MeiliSearch (slower but much more memory efficient)
             const pending = await index.addDocuments(theses.slice(j, j + 50_000))
             updateIds.push(pending.updateId)
@@ -175,16 +189,24 @@ export async function importAll(thesesFile: string, institutionsFile: string, re
         console.log("Waiting for MeiliSearch to process all the theses...")
         while (status.includes("processing") || status.includes("enqueued")) {
             if (status.includes("failed")) {
-                throw new Error("Failed to import in MeiliSearch. Update dump:" + (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+                console.error((await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+                throw new Error("Failed to import in MeiliSearch.")
             }
             await sleep(300) // wait for all the addDocuments to end
             status = (await getUpdates(index, updateIds)).map(update => update.status)
         }
     
         if (status.includes("failed")) {
-            throw new Error("Failed to import in MeiliSearch. Update dump:" + (await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+            console.error((await getUpdates(index, updateIds)).find(update => update.status === "failed"))
+                throw new Error("Failed to import in MeiliSearch.")
         }
     
         console.log("All done for MeiliSearch.")
     }
+
+    if (db !== undefined && db !== "redis" && db !== "meilisearch") {
+        console.error("Wrong db argument")
+    }
 }
+
+importAll(process.argv[2])
