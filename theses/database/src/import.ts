@@ -4,6 +4,8 @@ import { createClient, SchemaFieldTypes } from "redis"
 import MeiliSearch, { Index } from "meilisearch"
 import { Institution, These } from "./schema"
 
+require("dotenv").config()
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const getUpdates = async (index: Index, updateIds: number[]) => await Promise.all(updateIds.map(async id => await index.getUpdateStatus(id)))
@@ -73,7 +75,7 @@ async function parseInstitutionsFromJson(file: string): Promise<Institution[]> {
         throw new Error(`Failed to import geographic informations from JSON, because the file ${file} was not found`)
     }
 
-    const placesData: Institution[] = require("../../" + file).map((place: any) => ({ id: place.fields.identifiant_idref, name: place.fields.uo_lib_officiel, coords: `${place.fields.coordonnees[1]},${place.fields.coordonnees[0]}` }))
+    const placesData: Institution[] = require("../" + file).map((place: any) => ({ id: place.fields.identifiant_idref, name: place.fields.uo_lib_officiel, coords: `${place.fields.coordonnees[1]},${place.fields.coordonnees[0]}` }))
 
     return placesData
 }
@@ -96,9 +98,9 @@ async function importAll(db?: string) {
 
         console.log("Flushing Redis...")
         await redis.flushDb()
-        const promises = []
+        let promises = []
     
-        console.log("Sending all the insertions requests to Redis...")
+        console.log("Inserting all the theses...")
         let i = 0
         for (const these of theses) {
             promises.push(redis.json.set(`these:${i}`, ".", {
@@ -108,9 +110,18 @@ async function importAll(db?: string) {
                 available_online: these.available_online ? 1 : 0,
                 presentation_date: these.presentation_date ?? -1 // We need this field to never be null because it prevents RediSearch from indexing the whole associated JSON object. As we're going to perform timestamp comparisons on this, setting it to a negative value guarantees the object to be ignored by those.
             }))
+
+            if (i % 50_000 === 0) { // wait for chunks of 50_000 to be inserted to use less memory
+                await Promise.all(promises)
+                promises = []
+            }
+
             i++
         }
+        await Promise.all(promises)
     
+        console.log("Inserting all the institutions...")
+
         i = 0
         for (const institution of institutions) {
             promises.push(redis.json.set(`institution:${i}`, ".", {
@@ -119,7 +130,6 @@ async function importAll(db?: string) {
             i++
         }
     
-        console.log("Waiting for all the insertions to complete...")
         await Promise.all(promises)
     
         console.log("Creating the theses index...")

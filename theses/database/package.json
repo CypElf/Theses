@@ -2,7 +2,6 @@
     "scripts": {
         "import": "npx ts-node ./src/import.ts"
     },
-
     "devDependencies": {
         "@types/node": "^16.11.6",
         "ts-node": "^10.4.0",
@@ -12,6 +11,7 @@
         "@node-redis/json": "^1.0.1",
         "@node-redis/search": "^1.0.1",
         "csv-parser": "^3.0.0",
+        "dotenv": "^10.0.0",
         "meilisearch": "^0.23.0",
         "redis": "^4.0.1"
     }

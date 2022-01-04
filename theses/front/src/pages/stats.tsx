@@ -1,12 +1,11 @@
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import Highcharts from "highcharts"
 import HighchartsMap from "highcharts/modules/map"
 import France from "@highcharts/map-collection/countries/fr/fr-all.geo.json"
 import proj4 from "proj4"
 import HighchartsReact from "highcharts-react-official"
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
-import { StaticImage } from "gatsby-plugin-image"
 import { apiUrl, StatsQueryResult } from "../lib/api"
-import { Link } from "gatsby"
+import Layout from "../components/layout"
 
 HighchartsMap(Highcharts)
 
@@ -182,59 +181,58 @@ export default function Stats() {
         }
     }, [stats, year, finished])
 
-    return (<>
-    <form className="flex justify-center items-center my-8">
-        <StaticImage className="mr-10" src="../img/theses.gif" alt="logo de theses.fr"/>
-        
-        <label className="m-2" htmlFor="year">Year filter:</label> <input className="border-2 p-2 m-1" id="year" name="year" type="number" value={year} onChange={e => {
-            if (!isNaN(Number.parseInt(e.target.value))) {
-                setYear(Number.parseInt(e.target.value))
-            }
-            else if (e.target.value === "") setYear(undefined)
-        }}/>
-        <label className="m-2" htmlFor="finished">Finished filter: </label>
-        <select className="p-1 m-2" name="finished" id="finished" value={finished !== undefined ? (finished ? "true" : "false") : "none"} onChange={e => {
-            setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
-        }}>
-            <option value="none">-- aucune sélection --</option>
-            <option value="true">oui</option>
-            <option value="false">non</option>
-        </select>
+    return (
+        <Layout>
+            <form className="flex justify-center items-center my-8">                
+                <label className="m-2" htmlFor="year">Year filter:</label> <input className="border-2 p-2 m-1" id="year" name="year" type="number" value={year} onChange={e => {
+                    if (!isNaN(Number.parseInt(e.target.value))) {
+                        setYear(Number.parseInt(e.target.value))
+                    }
+                    else if (e.target.value === "") setYear(undefined)
+                }}/>
+                <label className="m-2" htmlFor="finished">Finished filter: </label>
+                <select className="p-1 m-2" name="finished" id="finished" value={finished !== undefined ? (finished ? "true" : "false") : "none"} onChange={e => {
+                    setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
+                }}>
+                    <option value="none">-- aucune sélection --</option>
+                    <option value="true">oui</option>
+                    <option value="false">non</option>
+                </select>
 
-        <button className="bg-theses-blue rounded-lg text-white px-4 py-2" onClick={e => {
-            e.preventDefault()
-            executeRequest(setStats, setError, year, finished)
-        }}>
-            Rechercher
-        </button>
-    </form>
-    <Link to="/">Back to the search page</Link>
-        {error && <p className="text-2xl text-center text-red-800">{error}</p>}
+                <button className="bg-theses-blue rounded-lg text-white px-4 py-2" onClick={e => {
+                    e.preventDefault()
+                    executeRequest(setStats, setError, year, finished)
+                }}>
+                    Rechercher
+                </button>
+            </form>
+            {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
-        {stats && pieChart && splineChart &&
-            <div>
-                <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
-                <div className="grid grid-cols-2">
+            {stats && pieChart && splineChart &&
+                <div>
+                    <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
+                    <div className="grid grid-cols-2">
+                        <HighchartsReact
+                            highcharts={Highcharts}
+                            options={pieChart}
+                        />
+                        <HighchartsReact
+                            highcharts={Highcharts}
+                            options={pieChart}
+                        />
+                    </div>
                     <HighchartsReact
                         highcharts={Highcharts}
-                        options={pieChart}
+                        options={splineChart}
                     />
                     <HighchartsReact
+                        constructorType="mapChart"
                         highcharts={Highcharts}
-                        options={pieChart}
+                        options={mapChart}
                     />
-                </div>
-                <HighchartsReact
-                    highcharts={Highcharts}
-                    options={splineChart}
-                />
-                <HighchartsReact
-                    constructorType="mapChart"
-                    highcharts={Highcharts}
-                    options={mapChart}
-                />
-            </div>}
-    </>)
+                </div>}
+        </Layout>
+    )
 }
 
 async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, year?: number, finished?: boolean ) {
