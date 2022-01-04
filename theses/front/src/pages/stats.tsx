@@ -4,8 +4,11 @@ import HighchartsMap from "highcharts/modules/map"
 import France from "@highcharts/map-collection/countries/fr/fr-all.geo.json"
 import proj4 from "proj4"
 import HighchartsReact from "highcharts-react-official"
+import { LoadingButton } from "@mui/lab"
+import SearchIcon from "@mui/icons-material/Search"
 import { apiUrl, StatsQueryResult } from "../lib/api"
 import Layout from "../components/layout"
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 
 HighchartsMap(Highcharts)
 
@@ -14,9 +17,10 @@ if (window !== undefined) {
 }
 
 export default function Stats() {
-    const [year, setYear] = useState<number>()
+    const [year, setYear] = useState("none")
     const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
+    const [loading, setLoading] = useState(false)
 
     const [stats, setStats] = useState<StatsQueryResult>()
 
@@ -50,7 +54,7 @@ export default function Stats() {
                         events: {
                             click: ({ point: { name } }) => {
                                 setFinished(name === "Terminées")
-                                executeRequest(setStats, setError, year, name === "Terminées")
+                                executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), name === "Terminées")
                             }
                         }
                     }
@@ -125,7 +129,7 @@ export default function Stats() {
                         events: {
                             click: ({ point: { category } }) => {
                                 setYear(category)
-                                executeRequest(setStats, setError, category, finished)
+                                executeRequest(setStats, setError, setLoading, category, finished)
                             }
                         }
                     }
@@ -183,28 +187,45 @@ export default function Stats() {
 
     return (
         <Layout>
-            <form className="flex justify-center items-center my-8">                
-                <label className="m-2" htmlFor="year">Year filter:</label> <input className="border-2 p-2 m-1" id="year" name="year" type="number" value={year} onChange={e => {
-                    if (!isNaN(Number.parseInt(e.target.value))) {
-                        setYear(Number.parseInt(e.target.value))
-                    }
-                    else if (e.target.value === "") setYear(undefined)
-                }}/>
-                <label className="m-2" htmlFor="finished">Finished filter: </label>
-                <select className="p-1 m-2" name="finished" id="finished" value={finished !== undefined ? (finished ? "true" : "false") : "none"} onChange={e => {
-                    setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
-                }}>
-                    <option value="none">-- aucune sélection --</option>
-                    <option value="true">oui</option>
-                    <option value="false">non</option>
-                </select>
+            <form className="flex justify-center items-center my-8 gap-10">
+                <FormControl>
+                        <InputLabel id="finishedInput">Terminées ?</InputLabel>
+                        <Select
+                            label="Terminées ?"
+                            labelId="finishedInput"
+                            value={finished !== undefined ? (finished ? "true" : "false") : "none"}
+                            onChange={e => {
+                                setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
+                            }}
+                        >
+                            <MenuItem value="none">Peu importe</MenuItem>
+                            <MenuItem value="true">Oui</MenuItem>
+                            <MenuItem value="false">Non</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl>
+                        <InputLabel id="yearInput">Année</InputLabel>
+                        <Select
+                            label="Année"
+                            labelId="yearInput"
+                            value={year}
+                            onChange={e => {
+                                if (typeof e.target.value === "string") setYear("none")
+                                else setYear(e.target.value)
+                            }}
+                        >
+                            <MenuItem value="none">Peu importe</MenuItem>
+                            {[...[...Array((new Date()).getFullYear() - 1970)].keys()].reverse().map(i => i + 1970).map(year => {
+                                return <MenuItem key={year} value={year}>{year}</MenuItem>
+                            })}
+                        </Select>
+                    </FormControl>
 
-                <button className="bg-theses-blue rounded-lg text-white px-4 py-2" onClick={e => {
-                    e.preventDefault()
-                    executeRequest(setStats, setError, year, finished)
+                <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon />} size="large" loading={loading} loadingPosition="end" onClick={e => {
+                    executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished)
                 }}>
                     Rechercher
-                </button>
+                </LoadingButton>
             </form>
             {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
@@ -235,7 +256,8 @@ export default function Stats() {
     )
 }
 
-async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, year?: number, finished?: boolean ) {
+async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>, year?: number, finished?: boolean) {
+    setLoading(true)
     let data: StatsQueryResult
     try {
         let url = `${apiUrl}/stats`
@@ -250,6 +272,7 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
     }
     catch {
         setResults(undefined)
+        setLoading(false)
         return setError("A server error occured.")
     }
 
@@ -260,8 +283,5 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
         thesesPerYear: new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
     })
     console.log(data)
-}
-
-function getFormattedDate(date: Date) {
-    return date.toISOString().substring(0, 10).split("-").reverse().join("/")
+    setLoading(false)
 }

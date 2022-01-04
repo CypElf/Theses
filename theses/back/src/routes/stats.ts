@@ -9,7 +9,6 @@ interface StatsReqQuery {
 
 export default async function routes(app: FastifyInstance, { redis }: { redis: RedisClientType }) {
     app.get("/stats", async (req, res) => {
-        console.log("Incoming stats request")
         const { year: yearStr, finished: finishedStr } = req.query as StatsReqQuery
 
         if (yearStr !== undefined && isNaN(Number.parseInt(yearStr)) || finishedStr !== undefined && finishedStr !== "true" && finishedStr !== "false") res.status(StatusCodes.BAD_REQUEST)
