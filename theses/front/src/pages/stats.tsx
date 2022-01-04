@@ -1,20 +1,14 @@
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import Highcharts from "highcharts"
-import HighchartsMap from "highcharts/modules/map"
-import France from "@highcharts/map-collection/countries/fr/fr-all.geo.json"
-import proj4 from "proj4"
 import HighchartsReact from "highcharts-react-official"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+// import "leaflet/dist/leaflet.css"
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import { apiUrl, StatsQueryResult } from "../lib/api"
 import Layout from "../components/layout"
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
-
-HighchartsMap(Highcharts)
-
-if (window !== undefined) {
-    (window as any).proj4 = (window as any).proj4 || proj4
-}
+import { Helmet } from "react-helmet"
 
 export default function Stats() {
     const [year, setYear] = useState("none")
@@ -24,7 +18,6 @@ export default function Stats() {
 
     const [stats, setStats] = useState<StatsQueryResult>()
 
-    const [mapChart, setMapChart] = useState<object>()
     const [pieChart, setPieChart] = useState<object>()
     const [splineChart, setSplineChart] = useState<object>()
 
@@ -59,12 +52,12 @@ export default function Stats() {
                         }
                     }
                 },
-    
+
                 tooltip: {
                     headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
                     pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:.2f}%</b> of total<br/>'
                 },
-    
+
                 series: [
                     {
                         name: "Thèses",
@@ -87,7 +80,7 @@ export default function Stats() {
                     enabled: false
                 }
             })
-            
+
             setSplineChart({
                 chart: {
                     type: 'areaspline'
@@ -139,87 +132,49 @@ export default function Stats() {
                     data: [...stats.thesesPerYear.values()]
                 }]
             })
-
-            setMapChart({
-
-                chart: {
-                    map: "countries/fr/fr-all"
-                },
-            
-                title: {
-                    text: "Répartition des thèses en France"
-                },
-            
-                mapNavigation: {
-                    enabled: true
-                },
-            
-                tooltip: {
-                    headerFormat: "",
-                    pointFormat: "<b>{point.name}</b><br>Nombre de thèses soutenues ici : {point.quantity}"
-                },
-            
-                series: [{
-                    name: "France",
-                    mapData: France,
-                    borderColor: "#A0A0A0",
-                    nullColor: "rgba(200, 200, 200, 0.3)",
-                    showInLegend: false
-                }, {
-                    name: "Separators",
-                    type: "mapline",
-                    nullColor: "#707070",
-                    showInLegend: false,
-                    enableMouseTracking: false
-                }, {
-                    type: "mappoint",
-                    name: "Cities",
-                    color: Highcharts.getOptions().colors[1],
-                    data: stats.institutions.map(institution => ({
-                        name: institution.name,
-                        lat: institution.lat,
-                        lon: institution.lng,
-                        quantity: institution.quantity
-                    })),
-                }]})
         }
     }, [stats, year, finished])
 
     return (
         <Layout>
+            <Helmet>
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+                    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+                    crossOrigin=""/>
+            </Helmet>
             <form className="flex justify-center items-center my-8 gap-10">
                 <FormControl>
-                        <InputLabel id="finishedInput">Terminées ?</InputLabel>
-                        <Select
-                            label="Terminées ?"
-                            labelId="finishedInput"
-                            value={finished !== undefined ? (finished ? "true" : "false") : "none"}
-                            onChange={e => {
-                                setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
-                            }}
-                        >
-                            <MenuItem value="none">Peu importe</MenuItem>
-                            <MenuItem value="true">Oui</MenuItem>
-                            <MenuItem value="false">Non</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <FormControl>
-                        <InputLabel id="yearInput">Année</InputLabel>
-                        <Select
-                            label="Année"
-                            labelId="yearInput"
-                            value={year}
-                            onChange={e => {
-                                if (typeof e.target.value === "string") setYear("none")
-                                else setYear(e.target.value)
-                            }}
-                        >
-                            <MenuItem value="none">Peu importe</MenuItem>
-                            {[...[...Array((new Date()).getFullYear() - 1970)].keys()].reverse().map(i => i + 1970).map(year => {
-                                return <MenuItem key={year} value={year}>{year}</MenuItem>
-                            })}
-                        </Select>
-                    </FormControl>
+                    <InputLabel id="finishedInput">Terminées ?</InputLabel>
+                    <Select
+                        label="Terminées ?"
+                        labelId="finishedInput"
+                        value={finished !== undefined ? (finished ? "true" : "false") : "none"}
+                        onChange={e => {
+                            setFinished(e.target.value === "none" ? undefined : e.target.value === "true")
+                        }}
+                    >
+                        <MenuItem value="none">Peu importe</MenuItem>
+                        <MenuItem value="true">Oui</MenuItem>
+                        <MenuItem value="false">Non</MenuItem>
+                    </Select>
+                </FormControl>
+                <FormControl>
+                    <InputLabel id="yearInput">Année</InputLabel>
+                    <Select
+                        label="Année"
+                        labelId="yearInput"
+                        value={year}
+                        onChange={e => {
+                            if (typeof e.target.value === "string") setYear("none")
+                            else setYear(e.target.value)
+                        }}
+                    >
+                        <MenuItem value="none">Peu importe</MenuItem>
+                        {[...[...Array((new Date()).getFullYear() - 1970)].keys()].reverse().map(i => i + 1970).map(year => {
+                            return <MenuItem key={year} value={year}>{year}</MenuItem>
+                        })}
+                    </Select>
+                </FormControl>
 
                 <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon />} size="large" loading={loading} loadingPosition="end" onClick={e => {
                     executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished)
@@ -246,11 +201,22 @@ export default function Stats() {
                         highcharts={Highcharts}
                         options={splineChart}
                     />
-                    <HighchartsReact
-                        constructorType="mapChart"
-                        highcharts={Highcharts}
-                        options={mapChart}
-                    />
+
+                    <MapContainer center={[46.95, 2.95]} zoom={6} scrollWheelZoom={false}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        {stats.institutions.map(institution => {
+                            return (
+                                <Marker key={institution.id} position={[institution.lat, institution.lng]}>
+                                    <Popup>
+                                        {institution.name} : {institution.quantity} thèses
+                                    </Popup>
+                                </Marker>
+                            )
+                        })}
+                    </MapContainer>
                 </div>}
         </Layout>
     )
@@ -277,7 +243,7 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
     }
 
     setError(null)
-    
+
     setResults({
         ...data,
         thesesPerYear: new Map(Object.entries(data.thesesPerYear).map(([k, v]) => [Number.parseInt(k), v]))
