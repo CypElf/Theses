@@ -185,36 +185,31 @@ export default function Stats() {
             {stats && pieChart && splineChart &&
                 <div>
                     <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
-                    <div className="grid grid-cols-2">
+                    <div className="grid grid-cols-2 pr-10">
                         <HighchartsReact
                             highcharts={Highcharts}
                             options={pieChart}
                         />
-                        <HighchartsReact
-                            highcharts={Highcharts}
-                            options={pieChart}
-                        />
+                        {window !== undefined && <MapContainer center={[46.95, 2.95]} zoom={6}>
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            {stats.institutions.map(institution => {
+                                return (
+                                    <Marker key={institution.id} position={[institution.lat, institution.lng]}>
+                                        <Popup>
+                                            {institution.name} : {institution.quantity} thèses
+                                        </Popup>
+                                    </Marker>
+                                )
+                            })}
+                        </MapContainer>}
                     </div>
                     <HighchartsReact
                         highcharts={Highcharts}
                         options={splineChart}
                     />
-
-                    {window !== undefined && <MapContainer center={[46.95, 2.95]} zoom={6} scrollWheelZoom={false}>
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        {stats.institutions.map(institution => {
-                            return (
-                                <Marker key={institution.id} position={[institution.lat, institution.lng]}>
-                                    <Popup>
-                                        {institution.name} : {institution.quantity} thèses
-                                    </Popup>
-                                </Marker>
-                            )
-                        })}
-                    </MapContainer>}
                 </div>}
         </Layout>
     )
