@@ -2,7 +2,6 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-// import "leaflet/dist/leaflet.css"
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
@@ -138,9 +137,8 @@ export default function Stats() {
     return (
         <Layout>
             <Helmet>
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-                    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-                    crossOrigin=""/>
+                <title>Statistiques sur les thèses</title>
+                <meta name="description" content="Statistiques et géolocalisation de l'ensemble des thèses de France."/>
             </Helmet>
             <form className="flex justify-center items-center my-8 gap-10">
                 <FormControl>
@@ -202,7 +200,7 @@ export default function Stats() {
                         options={splineChart}
                     />
 
-                    <MapContainer center={[46.95, 2.95]} zoom={6} scrollWheelZoom={false}>
+                    {window !== undefined && <MapContainer center={[46.95, 2.95]} zoom={6} scrollWheelZoom={false}>
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -216,7 +214,7 @@ export default function Stats() {
                                 </Marker>
                             )
                         })}
-                    </MapContainer>
+                    </MapContainer>}
                 </div>}
         </Layout>
     )

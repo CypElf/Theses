@@ -29,7 +29,7 @@ export default function Home() {
         <Layout>
             <Helmet>
                 <title>Parcourir les thèses</title>
-                <meta name="description" content="Rechercher et consulter les thèses."/>
+                <meta name="description" content="Recherche et consultation parmi l'ensemble des thèses de France."/>
             </Helmet>
             <form>
                 <Container maxWidth="md">

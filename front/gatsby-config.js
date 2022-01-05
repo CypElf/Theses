@@ -9,6 +9,7 @@ module.exports = {
     "gatsby-plugin-image",
     "gatsby-plugin-sharp",
     "gatsby-transformer-sharp",
-    "gatsby-theme-material-ui"
+    "gatsby-theme-material-ui",
+    "gatsby-plugin-react-leaflet"
   ],
 };
