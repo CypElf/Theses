@@ -9,7 +9,13 @@ module.exports = {
     "gatsby-plugin-image",
     "gatsby-plugin-sharp",
     "gatsby-transformer-sharp",
-    "gatsby-theme-material-ui",
-    "gatsby-plugin-react-leaflet"
-  ],
+    "gatsby-plugin-react-leaflet",
+    {
+      resolve: "gatsby-source-filesystem",
+      options: {
+        name: "images",
+        path: "./src/img/",
+      }
+    }
+  ]
 };

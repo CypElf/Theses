@@ -1,4 +1,5 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
+import React, { Dispatch, SetStateAction, useContext, useEffect, useState } from "react"
+import { Helmet } from "react-helmet"
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
@@ -7,7 +8,7 @@ import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import { apiUrl, StatsQueryResult } from "../lib/api"
 import Layout from "../components/layout"
-import { Helmet } from "react-helmet"
+import { darkModeContext } from "../components/theme"
 
 export default function Stats() {
     const [year, setYear] = useState("none")
@@ -15,19 +16,27 @@ export default function Stats() {
     const [error, setError] = useState<string>()
     const [loading, setLoading] = useState(false)
 
+    const { darkMode } = useContext(darkModeContext)
+
     const [stats, setStats] = useState<StatsQueryResult>()
 
     const [pieChart, setPieChart] = useState<object>()
     const [splineChart, setSplineChart] = useState<object>()
 
     useEffect(() => {
+        executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished) // initial request
+    }, [])
+
+    useEffect(() => {
         if (stats) {
             setPieChart({
                 chart: {
-                    type: "pie"
+                    type: "pie",
+                    backgroundColor: darkMode ? "#14161A" : "#FFFFFF"
                 },
                 title: {
-                    text: "Thèses terminées"
+                    text: "Thèses terminées",
+                    style: darkMode ? { "color": "#CCCCCC" } : undefined
                 },
                 accessibility: {
                     announceNewData: {
@@ -39,9 +48,11 @@ export default function Stats() {
                 },
                 plotOptions: {
                     series: {
+                        cursor: "pointer",
                         dataLabels: {
                             enabled: true,
-                            format: '{point.name}: {point.y:.1f}%'
+                            format: "{point.name} - {point.y:.1f}%",
+                            color: "#EEEEEE"
                         },
                         events: {
                             click: ({ point: { name } }) => {
@@ -49,28 +60,23 @@ export default function Stats() {
                                 executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), name === "Terminées")
                             }
                         }
-                    }
+                    },
                 },
-
                 tooltip: {
                     headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
                     pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:.2f}%</b> of total<br/>'
                 },
-
                 series: [
                     {
                         name: "Thèses",
-                        colorByPoint: true,
                         data: [
                             {
                                 name: "Non terminées",
-                                y: (stats.total - stats.finished) / stats.total * 100,
-                                drilldown: "Chrome"
+                                y: (stats.total - stats.finished) / stats.total * 100
                             },
                             {
                                 name: "Terminées",
-                                y: stats.finished / stats.total * 100,
-                                drilldown: "Terminées"
+                                y: stats.finished / stats.total * 100
                             }
                         ]
                     }
@@ -82,33 +88,36 @@ export default function Stats() {
 
             setSplineChart({
                 chart: {
-                    type: 'areaspline'
+                    type: "areaspline",
+                    backgroundColor: darkMode ? "#14161A" : "#FFFFFF"
                 },
                 title: {
-                    text: 'Thèses publiées au fil des années'
+                    text: "Thèses publiées au fil des années",
+                    style: darkMode ? { "color": "#CCCCCC" } : undefined
                 },
                 legend: {
-                    layout: 'vertical',
-                    align: 'left',
-                    verticalAlign: 'top',
+                    layout: "vertical",
+                    align: "left",
+                    verticalAlign: "top",
                     x: 150,
                     y: 100,
                     floating: true,
                     borderWidth: 1,
                     backgroundColor:
-                        '#FFFFFF'
+                        "#FFFFFF"
                 },
                 xAxis: {
                     categories: [...stats.thesesPerYear.keys()]
                 },
                 yAxis: {
                     title: {
-                        text: 'Nombre de thèses'
-                    }
+                        text: "Nombre de thèses"
+                    },
+                    gridLineColor: "#777777"
                 },
                 tooltip: {
                     shared: true,
-                    valueSuffix: ' units'
+                    valueSuffix: " units"
                 },
                 credits: {
                     enabled: false
@@ -118,6 +127,7 @@ export default function Stats() {
                         fillOpacity: 0.5
                     },
                     series: {
+                        cursor: "pointer",
                         events: {
                             click: ({ point: { category } }) => {
                                 setYear(category)
@@ -127,7 +137,7 @@ export default function Stats() {
                     }
                 },
                 series: [{
-                    name: 'Thèses',
+                    name: "Thèses",
                     data: [...stats.thesesPerYear.values()]
                 }]
             })
@@ -206,10 +216,12 @@ export default function Stats() {
                             })}
                         </MapContainer>}
                     </div>
-                    <HighchartsReact
-                        highcharts={Highcharts}
-                        options={splineChart}
-                    />
+                    <div className="mt-6 mr-10">
+                        <HighchartsReact
+                            highcharts={Highcharts}
+                            options={splineChart}
+                        />
+                    </div>
                 </div>}
         </Layout>
     )

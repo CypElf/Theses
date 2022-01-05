@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from "react"
-import { Link } from "gatsby"
-import { StaticImage } from "gatsby-plugin-image"
-import { Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material"
+import { graphql, Link, useStaticQuery } from "gatsby"
+import { GatsbyImage, getImage } from "gatsby-plugin-image"
+import { Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material"
 import SchoolIcon from "@mui/icons-material/School"
 import QueryStatsIcon from "@mui/icons-material/QueryStats"
 import InfoIcon from "@mui/icons-material/Info"
@@ -11,6 +11,22 @@ import { ThemeProvider } from "@mui/material"
 export default function Layout({ children }) {
     const DarkModeContext = useContext(darkModeContext)
     const { darkMode, setDarkMode } = DarkModeContext
+
+    const data = useStaticQuery(graphql`
+        query {
+            allImageSharp {
+                nodes {
+                    gatsbyImageData
+                    resize {
+                        originalName
+                    }
+                }
+            }
+        }
+    `)
+
+    const lightLogo = data.allImageSharp.nodes.find(node => node.resize.originalName === "theses_white.png")
+    const darkLogo = data.allImageSharp.nodes.find(node => node.resize.originalName === "theses_black.png")
 
     useEffect(() => {
         const theme = localStorage.getItem("preferred-theme")
@@ -27,28 +43,30 @@ export default function Layout({ children }) {
         }
     }, [])
 
+    console.log("data:", data)
+
     return (
         <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-            <div className={`flex justify-between ${darkMode ? "bg-black" : ""}`}>
+            <div className={`flex min-h-screen h-full justify-between ${darkMode ? "bg-theses-dark-blue text-white" : ""}`}>
                 <div className="mx-auto mt-7 w-fit h-fit sticky top-7">
-                    <StaticImage className="mx-10" src="../img/theses.gif" alt="logo de theses.fr" />
+                    <GatsbyImage className="mx-10" image={darkMode ? lightLogo.gatsbyImageData : darkLogo.gatsbyImageData} alt="logo de theses.fr" />
 
                     <div className="mx-auto mt-16 w-64 font-bold">Thèses</div>
-                    <List>
+                    <List className={darkMode ? "text-gray-300" : ""}>
                         <ListItem sx={{ m: "auto", width: 256 }}>
-                            <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/">
+                            <ListItemButton className={`rounded-lg ${!darkMode ? "hover:bg-blue-100" : ""}`} component={Link} to="/">
                                 <ListItemIcon>
-                                    <SchoolIcon />
+                                    <SchoolIcon/>
                                 </ListItemIcon>
-                                <ListItemText primary="Parcourir" />
+                                <ListItemText primary="Parcourir"/>
                             </ListItemButton>
                         </ListItem>
                         <ListItem sx={{ m: "auto", width: 256 }}>
-                            <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/stats">
+                            <ListItemButton className={`rounded-lg ${!darkMode ? "hover:bg-blue-100" : ""}`} component={Link} to="/stats">
                                 <ListItemIcon>
-                                    <QueryStatsIcon />
+                                    <QueryStatsIcon/>
                                 </ListItemIcon>
-                                <ListItemText primary="Statistiques" />
+                                <ListItemText primary="Statistiques"/>
                             </ListItemButton>
                         </ListItem>
                     </List>
@@ -56,9 +74,9 @@ export default function Layout({ children }) {
                     <Divider sx={{ mx: 4 }} />
 
                     <div className="mx-auto mt-7 w-64 font-bold">Autres</div>
-                    <List>
+                    <List className={darkMode ? "text-gray-300" : ""}>
                         <ListItem sx={{ m: "auto", width: 256 }}>
-                            <ListItemButton className="rounded-lg hover:bg-blue-100" component={Link} to="/about">
+                            <ListItemButton className={`rounded-lg ${!darkMode ? "hover:bg-blue-100" : ""}`} component={Link} to="/about">
                                 <ListItemIcon>
                                     <InfoIcon />
                                 </ListItemIcon>

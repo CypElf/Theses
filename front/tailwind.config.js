@@ -4,7 +4,8 @@ module.exports = {
     extend: {
         colors: {
             "theses-blue": "#38B4E7",
-            "theses-light-blue": "#E9E9E9"
+            "theses-light-blue": "#E9E9E9",
+            "theses-dark-blue": "#14161A"
         }
     }
 },
