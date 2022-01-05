@@ -1,10 +1,11 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
+import React, { Dispatch, SetStateAction, useContext, useEffect, useState } from "react"
 import { Helmet } from "react-helmet"
 import { Button, Card, CardActions, CardContent, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import { apiUrl, ThesesQueryResult } from "../lib/api"
 import Layout from "../components/layout"
+import { darkModeContext } from "../components/theme"
 
 export default function Home() {
     const [query, setQuery] = useState("")
@@ -14,6 +15,18 @@ export default function Home() {
     const [loading, setLoading] = useState(false)
 
     const [results, setResults] = useState<ThesesQueryResult>()
+
+    const { darkMode, setDarkMode } = useContext(darkModeContext)
+
+    const handleThemeChange = () => {
+        if (darkMode) {
+            localStorage.setItem("preferred-theme", "light")
+            setDarkMode(false)
+        } else {
+            localStorage.setItem("preferred-theme", "dark")
+            setDarkMode(true)
+        }
+    }
 
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
@@ -29,7 +42,7 @@ export default function Home() {
         <Layout>
             <Helmet>
                 <title>Parcourir les thèses</title>
-                <meta name="description" content="Recherche et consultation parmi l'ensemble des thèses de France."/>
+                <meta name="description" content="Recherche et consultation parmi l'ensemble des thèses de France." />
             </Helmet>
             <form>
                 <Container maxWidth="md">
@@ -92,8 +105,8 @@ export default function Home() {
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary" component="div">
                                     Thèse de {these.authors.join(", ")} supervisée par {these.directors.join(", ")} {these.presentation_date &&
-                                    <> et soutenue le {these.presentation_date}</>
-                                }
+                                        <> et soutenue le {these.presentation_date}</>
+                                    }
                                 </Typography>
                             </CardContent>
                             {
@@ -109,6 +122,8 @@ export default function Home() {
                     <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)} />
                 </div>
             </div>}
+
+            <Button onClick={handleThemeChange}>TOGGLE THEME</Button>
         </Layout>
     )
 }
