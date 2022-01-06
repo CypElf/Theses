@@ -39,5 +39,3 @@ export interface StatsQueryResult {
         lng: number
     }[]
 }
-
-export const apiUrl = "http://localhost:12000"

@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
-import { apiUrl, StatsQueryResult } from "../lib/api"
+import { StatsQueryResult } from "../lib/api"
 import Layout from "../components/layout"
 import { darkModeContext } from "../components/theme"
 
@@ -231,7 +231,8 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
     setLoading(true)
     let data: StatsQueryResult
     try {
-        let url = `${apiUrl}/stats`
+        // @ts-ignore:next-line
+        let url = `${process.env.GATSBY_API_URL}/stats`
         if (year !== undefined) url += `?year=${year}`
         if (finished !== undefined) {
             if (year) url += `&finished=${finished}`

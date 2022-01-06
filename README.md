@@ -8,9 +8,11 @@ In the `database` folder, create a `res` directory and put in it:
 - the CSV file containing all the theses, named `theses.csv`
 - a JSON file containing all the institutions, named `institutions.json`.
 
-Next, go to the `back` directory and create a `.env` file. You should put 2 variables in it: `REDIS_AUTH` and `MEILISEARCH_AUTH`. Make sure to keep them secret. This will be the variables that you'll have to put instead of the placeholder below when you'll start these MeiliSearch and Redis.
+Next, go to the `back` directory and create a `.env` file. You should put 4 variables in it: `REDIS_URL`, `REDIS_AUTH`, `MEILISEARCH_URL` and `MEILISEARCH_AUTH`. Make sure to keep them secret. This will be the variables that you'll have to put instead of the placeholder below when you'll start these MeiliSearch and Redis.
 
 Copy this `.env` file to the `database` folder.
+
+Create another `.env` file in the `front` folder and put the variable `GATSBY_API_URL` in it.
 
 Once done, open a new terminal anywhere on your disk. It's where the MeiliSearch executable will be stored, as well as the data in it (`data.ms` folder). You'll have to run a bunch of commands:
 

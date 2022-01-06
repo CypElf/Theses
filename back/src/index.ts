@@ -13,13 +13,24 @@ async function main() {
         console.error("Missing the `MEILISEARCH_AUTH` environment variable (please specify it in the `.env` file)")
         exit(1)
     }
+
+    if (!process.env["MEILISEARCH_URL"]) {
+        console.error("Missing the `MEILISEARCH_URL` environment variable (please specify it in the `.env` file)")
+        exit(1)
+    }
     
     if (!process.env["REDIS_AUTH"]) {
         console.error("Missing the `REDIS_AUTH` environment variable (please specify it in the `.env` file)")
         exit(1)
     }
 
+    if (!process.env["REDIS_URL"]) {
+        console.error("Missing the `REDIS_URL` environment variable (please specify it in the `.env` file)")
+        exit(1)
+    }
+
     const redis = createClient({
+        url: process.env["REDIS_URL"],
         password: process.env["REDIS_AUTH"]
     })
 
@@ -27,7 +38,7 @@ async function main() {
     await redis.connect()
 
     const meili = new MeiliSearch({
-        host: "http://127.0.0.1:7700",
+        host: process.env["MEILISEARCH_URL"],
         apiKey: process.env["MEILISEARCH_AUTH"]
     })
 
