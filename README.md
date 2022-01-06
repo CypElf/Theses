@@ -28,6 +28,7 @@ This will start MeiliSearch. Leave this terminal open, and in another terminal, 
 $ curl \
   -X POST 'http://localhost:7700/indexes/theses/settings/filterable-attributes' \
   -H 'Content-Type: application/json' \
+  -H 'X-Meili-API-Key: YOUR_MEILISEARCH_AUTH' \
   --data-binary '[
       "presentation_date",
       "finished"

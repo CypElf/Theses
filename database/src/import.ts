@@ -1,8 +1,9 @@
 import fs from "fs"
+import { exit } from "process"
 import csv from "csv-parser"
 import { createClient, SchemaFieldTypes } from "redis"
 import MeiliSearch, { Index } from "meilisearch"
-import { Institution, These } from "./schema"
+import { Institution, These, RedisThese } from "./schema"
 
 require("dotenv").config()
 
@@ -89,6 +90,7 @@ async function importAll(db?: string) {
 
     if (db === "redis" || db === undefined) {
         const redis = createClient({
+            url: process.env["REDIS_URL"],
             password: process.env["REDIS_AUTH"]
         })
         await redis.connect()
@@ -103,21 +105,28 @@ async function importAll(db?: string) {
         console.log("Inserting all the theses...")
         let i = 0
         for (const these of theses) {
-            promises.push(redis.json.set(`these:${i}`, ".", {
-                ...these,
+            const redisOptimizedThese: RedisThese = {
+                title: these.title,
+                // We need these fields to never be null because it prevents RediSearch from indexing the whole associated JSON object.
+                presentation_institution: these.presentation_institution ?? "",
                 institution_id: these.institution_id ?? "",
                 finished: these.finished ? 1 : 0,
-                available_online: these.available_online ? 1 : 0,
-                presentation_date: these.presentation_date ?? -1 // We need this field to never be null because it prevents RediSearch from indexing the whole associated JSON object. As we're going to perform timestamp comparisons on this, setting it to a negative value guarantees the object to be ignored by those.
+                presentation_date: these.presentation_date ?? -1
+            }
+
+            promises.push(redis.json.set(`these:${i}`, ".", {
+                ...redisOptimizedThese
             }))
 
-            if (i % 50_000 === 0) { // wait for chunks of 50_000 to be inserted to use less memory
+            if (i > 0 && i % 10_000 === 0) { // wait for chunks of 10_000 to be inserted to use less memory
+                console.log(`Inserting the theses up to ${i}...`)
                 await Promise.all(promises)
                 promises = []
             }
 
             i++
         }
+        console.log(`Inserting the last theses up to ${i}...`)
         await Promise.all(promises)
     
         console.log("Inserting all the institutions...")
@@ -178,7 +187,7 @@ async function importAll(db?: string) {
 
     if (db === "meilisearch" || db === undefined) {
         const meili = new MeiliSearch({
-            host: "http://127.0.0.1:7700",
+            host: process.env["MEILISEARCH_URL"] as string,
             apiKey: process.env["MEILISEARCH_AUTH"]
         })
         
@@ -220,6 +229,9 @@ const db = process.argv[2]?.toLowerCase()
 if (db !== undefined && db !== "redis" && db !== "meilisearch") {
     console.error("Wrong db argument")
 }
+if (!process.env["REDIS_URL"] || !process.env["REDIS_AUTH"] || !process.env["MEILISEARCH_AUTH"] || !process.env["MEILISEARCH_URL"]) {
+    console.error("Missing one of the variables in the .env file")
+}
 else {
-    importAll(db)
+    importAll(db).then(() => exit(0))
 }

@@ -23,6 +23,14 @@ export interface These {
     id: number
 }
 
+export interface RedisThese {
+    title: string,
+    finished: number,
+    presentation_institution: string,
+    presentation_date: number,
+    institution_id: string
+}
+
 export interface Institution {
     id: string,
     name: string,
