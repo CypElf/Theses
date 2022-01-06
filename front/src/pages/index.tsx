@@ -3,9 +3,8 @@ import { Helmet } from "react-helmet"
 import { Button, Card, CardActions, CardContent, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
-import { apiUrl, ThesesQueryResult } from "../lib/api"
+import { ThesesQueryResult } from "../lib/api"
 import Layout from "../components/layout"
-import { darkModeContext } from "../components/theme"
 
 export default function Home() {
     const [query, setQuery] = useState("")
@@ -118,7 +117,8 @@ async function executeRequest(query: string, limit: number, offset: number, year
     setLoading(true)
     let data: ThesesQueryResult
     try {
-        let url = `${apiUrl}/theses?query=${query}&limit=${limit}&offset=${offset}`
+        // @ts-ignore:next-line
+        let url = `${process.env.GATSBY_API_URL}/theses?query=${query}&limit=${limit}&offset=${offset}`
         if (year !== undefined) url += `&year=${year}`
         if (finished !== undefined) url += `&finished=${finished}`
 
