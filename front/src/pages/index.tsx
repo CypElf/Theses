@@ -16,18 +16,6 @@ export default function Home() {
 
     const [results, setResults] = useState<ThesesQueryResult>()
 
-    const { darkMode, setDarkMode } = useContext(darkModeContext)
-
-    const handleThemeChange = () => {
-        if (darkMode) {
-            localStorage.setItem("preferred-theme", "light")
-            setDarkMode(false)
-        } else {
-            localStorage.setItem("preferred-theme", "dark")
-            setDarkMode(true)
-        }
-    }
-
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
     const currentPage = results ? results.offset / results.limit + 1 : 1
@@ -122,8 +110,6 @@ export default function Home() {
                     <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)} />
                 </div>
             </div>}
-
-            <Button onClick={handleThemeChange}>TOGGLE THEME</Button>
         </Layout>
     )
 }

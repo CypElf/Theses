@@ -16,6 +16,12 @@ module.exports = {
         name: "images",
         path: "./src/img/",
       }
-    }
+    },
+    {
+      resolve: "gatsby-plugin-manifest",
+      options: {
+        icon: "./src/img/theses_logo.png",
+      },
+    },
   ]
 };
