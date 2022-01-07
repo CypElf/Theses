@@ -6,6 +6,9 @@ module.exports = {
             "theses-blue": "#38B4E7",
             "theses-light-blue": "#E9E9E9",
             "theses-dark-blue": "#14161A"
+        },
+        fontFamily: {
+          segoe: ["Segoe UI", "Arial", "sans-serif"]
         }
     }
 },

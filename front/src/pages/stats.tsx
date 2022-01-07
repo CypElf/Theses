@@ -52,7 +52,7 @@ export default function Stats() {
                         dataLabels: {
                             enabled: true,
                             format: "{point.name} - {point.y:.1f}%",
-                            color: "#EEEEEE"
+                            color: darkMode ? "#EEEEEE" : undefined
                         },
                         events: {
                             click: ({ point: { name } }) => {
@@ -72,11 +72,13 @@ export default function Stats() {
                         data: [
                             {
                                 name: "Non terminées",
-                                y: (stats.total - stats.finished) / stats.total * 100
+                                y: (stats.total - stats.finished) / stats.total * 100,
+                                color: "#434348"
                             },
                             {
                                 name: "Terminées",
-                                y: stats.finished / stats.total * 100
+                                y: stats.finished / stats.total * 100,
+                                color: darkMode ? "#4C7092" : "#7CB5EC"
                             }
                         ]
                     }
@@ -194,7 +196,6 @@ export default function Stats() {
 
             {stats && pieChart && splineChart &&
                 <div>
-                    <h1 className="ml-10 text-xl">Statistiques sur ces thèses</h1>
                     <div className="grid grid-cols-2 pr-10">
                         <HighchartsReact
                             highcharts={Highcharts}
