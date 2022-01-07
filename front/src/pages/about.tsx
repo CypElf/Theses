@@ -1,7 +1,11 @@
 import React, { useContext } from "react"
 import { Helmet } from "react-helmet"
 import { Link, Typography } from "@mui/material"
+import InfoIcon from "@mui/icons-material/Info"
 import GitHubIcon from "@mui/icons-material/GitHub"
+import ComputerIcon from "@mui/icons-material/Computer"
+import CloudQueueIcon from "@mui/icons-material/CloudQueue"
+import StorageIcon from "@mui/icons-material/Storage"
 import Layout from "../components/layout"
 import { darkModeContext } from "../components/theme"
 
@@ -15,7 +19,7 @@ export default function About() {
                 <meta name="description" content="Informations et contexte sur ce site et les technologies qu'il utilise."/>
             </Helmet>
             <div className="m-20">
-            <h1 className="my-6 text-3xl">Contexte</h1>
+            <h1 className="my-6 text-3xl"><InfoIcon/> Contexte</h1>
                 <Typography className="mt-6 font-segoe" gutterBottom>
                     <p>
                         Ce site est un projet de programmation web côté serveur développé dans le cadre du DUT informatique 2 ème année.<br/>
@@ -26,7 +30,7 @@ export default function About() {
                     </p>
                 </Typography>
                 
-                <h1 className="my-6 text-3xl">Front end</h1>
+                <h1 className="my-6 text-3xl"><ComputerIcon/> Front end</h1>
                 <Typography className="mt-6 font-segoe" gutterBottom>
                     Pour son front end, ce site utilise la bibliothèque JavaScript <Link href="https://fr.reactjs.org/">React</Link>. En effet, étant déjà très à l'aise avec cette dernière, cela m'a semblé le meilleur choix pour ce projet dont le front end prend une place importante (requêtes au serveur, traitement des données, gestion d'états, etc), là où du JavaScript vanilla aurait été extrêmement compliqué à utiliser partout, gérer et maintenir.<br/>
                     React étant très minimaliste et n'incluant pas directement de solution à certaines fonctionnalités très communes, j'ai donc utilisé le framework pour React <Link href="https://www.gatsbyjs.com/">Gatsby</Link> qui rajoute du routage côté client ainsi que du rendu statique (essentiel pour le <Link href="https://fr.wikipedia.org/wiki/Optimisation_pour_les_moteurs_de_recherche">SEO</Link>).<br/>
@@ -34,12 +38,12 @@ export default function About() {
                     Du côté du CSS, j'ai utilisé le framework CSS <Link href="https://tailwindcss.com/">TailwindCSS</Link> pour simplifier et accélérer le design du site ainsi que la bibliothèque <Link href="https://mui.com/">Material UI</Link>, permettant d'utiliser de nombreux composants React riches en fonctionnalités prêts à l'utilisation.<br/>
                     Enfin, j'emploie la bibliothèque <Link href="https://www.highcharts.com/">Highcharts</Link> pour générer des graphiques à partir des données ainsi que <Link href="https://leafletjs.com/">Leaflet</Link> pour générer une carte personnalisée basée sur le projet <Link href="https://www.openstreetmap.fr/">OpenStreetMap</Link>.
                 </Typography>
-                <h1 className="my-6 text-3xl">Back end</h1>
+                <h1 className="my-6 text-3xl"><CloudQueueIcon/> Back end</h1>
                 <Typography className="mt-6 font-segoe" gutterBottom>
                     Pour son back end, ce site utilise <Link href="https://nodejs.org/en/">Node.js</Link> avec une nouvelle fois <Link href="https://www.typescriptlang.org/">TypeScript</Link>. En effet, les données échangées via l'API étant en JSON, utiliser du JavaScript pour manipuler ces données côté serveur également a l'avantage de faciliter très fortement l'interfaçage avec le front end et de proposer une expérience de développement uniforme.<br/>
                     Le framework web utilisé est <Link href="https://www.fastify.io/">Fastify</Link>, un successeur du célèbre <Link href="https://expressjs.com/fr/">Express.js</Link>. Celui ci est en effet extrêmement adapté pour proposer une API, avec un système de route très pertinent.
                 </Typography>
-                <h1 className="my-6 text-3xl">Bases de données</h1>
+                <h1 className="my-6 text-3xl"><StorageIcon/> Bases de données</h1>
                 <Typography className="mt-6 font-segoe" gutterBottom>
                     <p>
                         La base de données a été un réel problème. Les bases de données relationnelles n'étaient pas nécessaires puisqu'il n'y avait pas de relations complexes à réaliser, et elles ont montré leur limite au niveau des performances très rapidement. De plus, celles ci ne présentent aucun mécanisme de recherche pertinent.
