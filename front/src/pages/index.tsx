@@ -28,7 +28,7 @@ export default function Home() {
     return (
         <Layout>
             <Helmet>
-                <title>Parcourir les thèses</title>
+                <title>Thèses - parcourir</title>
                 <meta name="description" content="Recherche et consultation parmi l'ensemble des thèses de France." />
             </Helmet>
             <form>
@@ -81,7 +81,7 @@ export default function Home() {
 
             {results && <div>
                 <div className="flex justify-between m-3 mr-10">
-                    <h1 className="text-xl">{results.nbHits} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
+                    <h1 className="text-xl">{results.nbHits.toLocaleString("fr")} résultats {results.query.length > 0 && <>pour <span className="text-theses-blue">{results.query}</span></>}</h1>
                 </div>
                 {results.hits.map(these => {
                     return (

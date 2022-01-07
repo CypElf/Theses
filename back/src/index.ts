@@ -50,7 +50,7 @@ async function main() {
     app.register(cors)
     
     app.listen(port, () => {
-        console.log(`Server started on port ${port}`)
+        console.log("Server started on port", port)
     })
     
     for (const filename of readdirSync(__dirname + "/routes")) {

@@ -147,7 +147,7 @@ export default function Stats() {
     return (
         <Layout>
             <Helmet>
-                <title>Statistiques sur les thèses</title>
+                <title>Thèses - statistiques</title>
                 <meta name="description" content="Statistiques et géolocalisation de l'ensemble des thèses de France."/>
             </Helmet>
             <form className="flex justify-center items-center my-8 gap-10">
@@ -209,7 +209,7 @@ export default function Stats() {
                                 return (
                                     <Marker key={institution.id} position={[institution.lat, institution.lng]}>
                                         <Popup>
-                                            {institution.name} : {institution.quantity} thèses
+                                            <span className="text-sm">{institution.name} : <span className="font-bold">{institution.quantity}</span> thèses</span>
                                         </Popup>
                                     </Marker>
                                 )

@@ -8,7 +8,7 @@ export default function About() {
     return (
         <Layout>
             <Helmet>
-                <title>À propos de ce site</title>
+                <title>Thèses - à propos</title>
                 <meta name="description" content="Informations et contexte sur ce site et les technologies qu'il utilise."/>
             </Helmet>
             <div className="m-20">
