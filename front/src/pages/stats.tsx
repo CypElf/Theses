@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet"
 import Highcharts from "highcharts"
 import HighchartsReact from "highcharts-react-official"
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material"
+import { Alert, FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import { StatsQueryResult } from "../lib/api"
@@ -152,6 +152,7 @@ export default function Stats() {
                 <title>Thèses - statistiques</title>
                 <meta name="description" content="Statistiques et géolocalisation de l'ensemble des thèses de France."/>
             </Helmet>
+            {error && <Alert className="mt-5 mx-14" severity="error">{error}</Alert>}
             <form className="flex justify-center items-center my-8 gap-10">
                 <FormControl>
                     <InputLabel id="finishedInput">Terminées ?</InputLabel>
@@ -192,7 +193,6 @@ export default function Stats() {
                     Rechercher
                 </LoadingButton>
             </form>
-            {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
             {stats && pieChart && splineChart &&
                 <div>

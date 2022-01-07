@@ -1,6 +1,6 @@
-import React, { Dispatch, SetStateAction, useContext, useEffect, useState } from "react"
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { Helmet } from "react-helmet"
-import { Button, Card, CardActions, CardContent, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
+import { Alert, Button, Card, CardActions, CardContent, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
 import { ThesesQueryResult } from "../lib/api"
@@ -31,6 +31,7 @@ export default function Home() {
                 <title>Thèses - parcourir</title>
                 <meta name="description" content="Recherche et consultation parmi l'ensemble des thèses de France." />
             </Helmet>
+            {error && <Alert className="mt-5 mr-14" severity="error">{error}</Alert>}
             <form>
                 <Container maxWidth="md">
                     <TextField label="Rechercher" margin="normal" fullWidth onChange={e => setQuery(e.target.value)} />
@@ -77,7 +78,6 @@ export default function Home() {
                     </LoadingButton>
                 </div>
             </form>
-            {error && <p className="text-2xl text-center text-red-800">{error}</p>}
 
             {results && <div>
                 <div className="flex justify-between m-3 mr-10">
