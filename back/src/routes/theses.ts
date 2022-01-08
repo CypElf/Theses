@@ -38,8 +38,6 @@ export default async function routes(app: FastifyInstance, { redis, meili }: { r
 
         const meiliFilter = [yearFilter, finishedFilter, institutionFilter].filter(f => f !== undefined).join(" AND ")
 
-        console.log(meiliFilter)
-
         const limitNumber = limit ? Number.parseInt(limit) : 20
         const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0
 
