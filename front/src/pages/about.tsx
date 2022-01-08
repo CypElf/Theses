@@ -23,7 +23,8 @@ export default function About() {
                 <Typography className="mt-6 font-segoe text-gray-300" gutterBottom>
                     <p>
                         Ce site est un projet de programmation web côté serveur développé dans le cadre du DUT informatique 2 ème année.<br/>
-                        Inspiré du site <Link href="https://theses.fr">theses.fr</Link>, ce projet permet notamment de faire de la recherche en temps réel parmi toutes les thèses françaises ainsi que de l'affichage de statistiques concernant celles ci.
+                        Inspiré du site <Link href="https://theses.fr">theses.fr</Link>, ce projet permet notamment de faire de la recherche en temps réel parmi toutes les thèses françaises ainsi que de l'affichage de statistiques concernant celles ci.<br/>
+                        Le projet étant normalement surtout traiter de la partie côté serveur, ce site n'est pas responsive, car nous n'avons pas eu de contrainte dans ce sens. Par conséquent, pour une expérience optimale, il faut consulter ce site sur PC, idéalement avec une définition de 1920{"\u00d7"}1080. Merci de votre compréhension.
                     </p>
                     <p className="mt-2">
                         Ce n'est pas un projet open source, mais si vous avez été ajoutés au dépôt, vous pouvez le trouver sur <Link href="https://github.com/CypElf/Theses"><GitHubIcon htmlColor={darkMode ? "#FFFFFF" : "#000000"}/> GitHub</Link>.
