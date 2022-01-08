@@ -37,5 +37,9 @@ export interface StatsQueryResult {
         quantity: number,
         lat: number,
         lng: number
+    }[],
+    exhaustiveInstitutions: {
+        id: string,
+        name: string
     }[]
 }

@@ -12,6 +12,7 @@ import { darkModeContext } from "../components/theme"
 
 export default function Stats() {
     const [year, setYear] = useState("none")
+    const [institution, setInstitution] = useState("none")
     const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
     const [loading, setLoading] = useState(false)
@@ -24,7 +25,7 @@ export default function Stats() {
     const [splineChart, setSplineChart] = useState<object>()
 
     useEffect(() => {
-        executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished) // initial request
+        executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution) // initial request
     }, [])
 
     useEffect(() => {
@@ -57,7 +58,7 @@ export default function Stats() {
                         events: {
                             click: ({ point: { name } }) => {
                                 setFinished(name === "Terminées")
-                                executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), name === "Terminées")
+                                executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), name === "Terminées", institution === "none" ? undefined : institution)
                             }
                         }
                     },
@@ -133,7 +134,7 @@ export default function Stats() {
                         events: {
                             click: ({ point: { category } }) => {
                                 setYear(category)
-                                executeRequest(setStats, setError, setLoading, category, finished)
+                                executeRequest(setStats, setError, setLoading, category, finished, institution === "none" ? undefined : institution)
                             }
                         }
                     }
@@ -144,7 +145,7 @@ export default function Stats() {
                 }]
             })
         }
-    }, [stats, year, finished])
+    }, [stats, year, finished, institution])
 
     return (
         <Layout>
@@ -186,9 +187,26 @@ export default function Stats() {
                         })}
                     </Select>
                 </FormControl>
+                <FormControl>
+                    <InputLabel id="institutionInput">Établissement</InputLabel>
+                    <Select
+                        label="Établissement"
+                        labelId="institutionInput"
+                        value={institution}
+                        onChange={e => {
+                            if (e.target.value === "none") setInstitution("none")
+                            else setInstitution(e.target.value)
+                        }}
+                    >
+                        <MenuItem value="none">Peu importe</MenuItem>
+                        {stats && stats.exhaustiveInstitutions.map(institution => {
+                            return <MenuItem key={institution.id} value={institution.id}>{institution.name}</MenuItem>
+                        })}
+                    </Select>
+                </FormControl>
 
                 <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon />} size="large" loading={loading} loadingPosition="end" onClick={e => {
-                    executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished)
+                    executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution)
                 }}>
                     Rechercher
                 </LoadingButton>
@@ -210,7 +228,13 @@ export default function Stats() {
                                 return (
                                     <Marker key={institution.id} position={[institution.lat, institution.lng]}>
                                         <Popup>
-                                            <span className="text-sm">{institution.name} : <span className="font-bold">{institution.quantity}</span> thèses</span>
+                                            <span className="text-sm"><span className="cursor-pointer" onClick={() => {
+                                                setInstitution(institution.id)
+                                                executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution.id)
+
+                                            }}>
+                                                {institution.name}
+                                            </span> : <span className="font-bold">{institution.quantity}</span> thèses</span>
                                         </Popup>
                                     </Marker>
                                 )
@@ -228,7 +252,7 @@ export default function Stats() {
     )
 }
 
-async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>, year?: number, finished?: boolean) {
+async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>, year?: number, finished?: boolean, institution?: string) {
     setLoading(true)
     let data: StatsQueryResult
     try {
@@ -239,6 +263,12 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
             if (year) url += `&finished=${finished}`
             else url += `?finished=${finished}`
         }
+        if (institution !== undefined) {
+            if (year || finished) url += `&institution=${institution}`
+            else url += `?institution=${institution}`
+        }
+
+        console.log(url)
 
         const result = await fetch(url)
         data = await result.json()

@@ -18,7 +18,7 @@ function getDateFilterForYear(year: number) {
     return `presentation_date >= ${yearBeginning} AND presentation_date <= ${yearEnding}`
 }
 
-export default async function routes(app: FastifyInstance, { redis, meili }: { redis: RedisClientType, meili: MeiliSearch }) {
+export default async function routes(app: FastifyInstance, { meili }: { meili: MeiliSearch }) {
     app.get("/theses", async (req, res) => {
         const { limit, query, offset, year, finished } = req.query as ThesesReqQuery
 
