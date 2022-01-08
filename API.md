@@ -42,21 +42,14 @@ Return:
 
 ## GET /institutions
 
-Query parameters:
-- lat (number)
-- lng (number)
-- rad (number)
-
 Return:
 
 ```ts
 {
-    total: number,
-    documents: {
-        name: string,
-        lat: number,
-        lng: number
-    }[]
+    exhaustiveInstitutions: {
+        id: string,
+        name: string
+    }
 }
 ```
 
@@ -65,6 +58,7 @@ Return:
 Query parameters:
 - year (number)
 - finished (boolean)
+- institution (string)
 
 Return:
 

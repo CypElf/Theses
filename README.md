@@ -12,7 +12,7 @@ Next, go to the `back` directory and create a `.env` file. You should put 4 vari
 
 Copy this `.env` file to the `database` folder.
 
-Create another `.env` file in the `front` folder and put the variable `GATSBY_API_URL` in it.
+Create a `.env.development` and / or a `.env.production` file depending on your context in the `front` folder and put the variable `GATSBY_API_URL` in it.
 
 Once done, open a new terminal anywhere on your disk. It's where the MeiliSearch executable will be stored, as well as the data in it (`data.ms` folder). You'll have to run a bunch of commands:
 
@@ -33,7 +33,8 @@ $ curl \
   -H 'X-Meili-API-Key: YOUR_MEILISEARCH_AUTH' \
   --data-binary '[
       "presentation_date",
-      "finished"
+      "finished",
+      "institution_id"
   ]'
 ```
 

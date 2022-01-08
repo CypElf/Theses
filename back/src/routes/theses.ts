@@ -8,7 +8,8 @@ interface ThesesReqQuery {
     query?: string,
     offset?: string,
     year?: string,
-    finished?: string
+    finished?: string,
+    institution?: string
 }
 
 function getDateFilterForYear(year: number) {
@@ -18,18 +19,26 @@ function getDateFilterForYear(year: number) {
     return `presentation_date >= ${yearBeginning} AND presentation_date <= ${yearEnding}`
 }
 
-export default async function routes(app: FastifyInstance, { meili }: { meili: MeiliSearch }) {
+export default async function routes(app: FastifyInstance, { redis, meili }: { redis: RedisClientType, meili: MeiliSearch }) {
     app.get("/theses", async (req, res) => {
-        const { limit, query, offset, year, finished } = req.query as ThesesReqQuery
+        const { limit, query, offset, year, finished, institution } = req.query as ThesesReqQuery
 
         if (limit && (isNaN(Number.parseInt(limit)) || Number.parseInt(limit) < 0 || Number.parseInt(limit) > 20) || offset && (isNaN(Number.parseInt(offset)) || Number.parseInt(offset) < 0)) return res.status(StatusCodes.BAD_REQUEST).send()
 
+        if (institution) {
+            const result = await redis.ft.search("idx:institutions", `@id:${institution}`)
+            if (result.total !== 1) return res.status(StatusCodes.NOT_FOUND).send()
+        }
+        
         const thesesIndex = meili.index("theses")
 
         const yearFilter = year !== undefined && !isNaN(Number.parseInt(year)) ? getDateFilterForYear(Number.parseInt(year)) : undefined
         const finishedFilter = finished !== undefined ? `finished = ${finished}` : undefined
+        const institutionFilter = institution !== undefined ? `institution_id = ${institution}` : undefined
 
-        const meiliFilter = [yearFilter, finishedFilter].filter(f => f !== undefined).join(" AND ")
+        const meiliFilter = [yearFilter, finishedFilter, institutionFilter].filter(f => f !== undefined).join(" AND ")
+
+        console.log(meiliFilter)
 
         const limitNumber = limit ? Number.parseInt(limit) : 20
         const offsetNumber = offset ? Number.parseInt(offset) * limitNumber : 0

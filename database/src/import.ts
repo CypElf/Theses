@@ -176,6 +176,10 @@ async function importAll(db?: string) {
             "$.coords": {
                 type: SchemaFieldTypes.GEO,
                 AS: "coords"
+            },
+            "$.id": {
+                type: SchemaFieldTypes.TEXT,
+                AS: "id"
             }
         }, {
             ON: "JSON",

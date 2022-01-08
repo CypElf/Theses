@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import { Alert, FormControl, InputLabel, MenuItem, Select } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
-import { StatsQueryResult } from "../lib/api"
+import { getExhaustiveInstitutions, InstitutionsQueryResult, StatsQueryResult } from "../lib/api"
 import Layout from "../components/layout"
 import { darkModeContext } from "../components/theme"
 
@@ -20,12 +20,22 @@ export default function Stats() {
     const { darkMode } = useContext(darkModeContext)
 
     const [stats, setStats] = useState<StatsQueryResult>()
+    const [exhaustiveIinstitutions, setExhaustiveInstitutions] = useState<InstitutionsQueryResult>()
 
     const [pieChart, setPieChart] = useState<object>()
     const [splineChart, setSplineChart] = useState<object>()
 
     useEffect(() => {
-        executeRequest(setStats, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution) // initial request
+        (async () => {
+            try {
+                const institutions = await getExhaustiveInstitutions()
+                setExhaustiveInstitutions(institutions)
+            }
+            catch {
+                setError("Une erreur est survenue lors de la récupération de la liste des établissements")
+            }
+            executeRequest(setStats, setError, setLoading) // initial request
+        })()
     }, [])
 
     useEffect(() => {
@@ -199,7 +209,7 @@ export default function Stats() {
                         }}
                     >
                         <MenuItem value="none">Peu importe</MenuItem>
-                        {stats && stats.exhaustiveInstitutions.map(institution => {
+                        {exhaustiveIinstitutions && exhaustiveIinstitutions.institutions.map(institution => {
                             return <MenuItem key={institution.id} value={institution.id}>{institution.name}</MenuItem>
                         })}
                     </Select>
@@ -276,7 +286,7 @@ async function executeRequest(setResults: Dispatch<SetStateAction<StatsQueryResu
     catch {
         setResults(undefined)
         setLoading(false)
-        return setError("A server error occured.")
+        return setError("Une erreur est survenue lors de la récupération des statistiques.")
     }
 
     setError(null)

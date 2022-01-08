@@ -32,11 +32,11 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
 
         // theses query
 
-        const optionalFinishedFilter = finished !== undefined ? `@finished:[${finished ? 1 : 0} ${finished ? 1 : 0}]` : ""
-        const optionalYearFilter = year ? `@presentation_date:[${Date.UTC(year, 0, 1)} ${Date.UTC(year, 11, 31, 23, 59, 59)}]` : ""
-        const optionalInstitutionFilter = institution ? `@institution_id:${institution}` : ""
+        const optionalFinishedFilter = finished !== undefined ? `@finished:[${finished ? 1 : 0} ${finished ? 1 : 0}]` : undefined
+        const optionalYearFilter = year ? `@presentation_date:[${Date.UTC(year, 0, 1)} ${Date.UTC(year, 11, 31, 23, 59, 59)}]` : undefined
+        const optionalInstitutionFilter = institution ? `@institution_id:${institution}` : undefined
 
-        const searchFilter = optionalYearFilter + (optionalFinishedFilter ? (" " + optionalFinishedFilter) : "") + (optionalInstitutionFilter ? (" " + optionalInstitutionFilter) : "")
+        const searchFilter = [optionalFinishedFilter, optionalYearFilter, optionalInstitutionFilter].filter(f => f !== undefined).join(" ")
 
         const finishedStat = (await redis.ft.search("idx:theses", `@finished:[1 1] ${searchFilter}`)).total
 
@@ -80,7 +80,6 @@ export default async function routes(app: FastifyInstance, { redis }: { redis: R
             total: totalStat,
             thesesPerYear: Object.fromEntries(thesesPerYear),
             institutions: formattedInstitutions.filter(institution => institution.quantity > 0),
-            exhaustiveInstitutions: institutions.documents.map(institution => ({ id: institution.value.id, name: institution.value.name })).filter(institution => institution.id !== undefined)
         })
     })
 }

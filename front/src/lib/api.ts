@@ -37,9 +37,19 @@ export interface StatsQueryResult {
         quantity: number,
         lat: number,
         lng: number
-    }[],
-    exhaustiveInstitutions: {
+    }[]
+}
+
+export interface InstitutionsQueryResult {
+    institutions: {
         id: string,
         name: string
     }[]
+}
+
+export async function getExhaustiveInstitutions() {
+    // @ts-ignore:next-line
+    const result = await fetch(`${process.env.GATSBY_API_URL}/institutions`)
+    const institutions: InstitutionsQueryResult = await result.json()
+    return institutions
 }

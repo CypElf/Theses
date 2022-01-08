@@ -3,17 +3,19 @@ import { Helmet } from "react-helmet"
 import { Alert, Button, Card, CardActions, CardContent, Container, FormControl, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from "@mui/material"
 import { LoadingButton } from "@mui/lab"
 import SearchIcon from "@mui/icons-material/Search"
-import { ThesesQueryResult } from "../lib/api"
+import { getExhaustiveInstitutions, InstitutionsQueryResult, ThesesQueryResult } from "../lib/api"
 import Layout from "../components/layout"
 
 export default function Home() {
     const [query, setQuery] = useState("")
     const [year, setYear] = useState("none")
+    const [institution, setInstitution] = useState("none")
     const [finished, setFinished] = useState<boolean>()
     const [error, setError] = useState<string>()
     const [loading, setLoading] = useState(false)
 
     const [results, setResults] = useState<ThesesQueryResult>()
+    const [exhaustiveIinstitutions, setExhaustiveInstitutions] = useState<InstitutionsQueryResult>()
 
     const limit = 10
     const maxPage = results ? Math.ceil(results.nbHits / limit) : 0
@@ -21,7 +23,14 @@ export default function Home() {
 
     useEffect(() => {
         (async () => {
-            executeRequest(query, limit, 0, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)
+            try {
+                const institutions = await getExhaustiveInstitutions()
+                setExhaustiveInstitutions(institutions)
+            }
+            catch {
+                setError("Une erreur est survenue lors de la récupération de la liste des établissements")
+            }
+            executeRequest(query, limit, 0, setResults, setError, setLoading)
         })()
     }, [])
 
@@ -37,7 +46,7 @@ export default function Home() {
                     <TextField label="Rechercher" margin="normal" fullWidth onChange={e => setQuery(e.target.value)} />
                 </Container>
 
-                <div className="w-1/3 flex justify-around items-center m-auto">
+                <div className="flex justify-center gap-8 items-center mx-auto mt-4">
                     <FormControl>
                         <InputLabel id="finishedInput">Terminées ?</InputLabel>
                         <Select
@@ -70,9 +79,26 @@ export default function Home() {
                             })}
                         </Select>
                     </FormControl>
+                    <FormControl>
+                        <InputLabel id="institutionInput">Établissement</InputLabel>
+                        <Select
+                            label="Établissement"
+                            labelId="institutionInput"
+                            value={institution}
+                            onChange={e => {
+                                if (e.target.value === "none") setInstitution("none")
+                                else setInstitution(e.target.value)
+                            }}
+                        >
+                            <MenuItem value="none">Peu importe</MenuItem>
+                            {exhaustiveIinstitutions && exhaustiveIinstitutions.institutions.map(institution => {
+                                return <MenuItem key={institution.id} value={institution.id}>{institution.name}</MenuItem>
+                            })}
+                        </Select>
+                    </FormControl>
 
                     <LoadingButton type="submit" variant="contained" endIcon={<SearchIcon />} size="large" loading={loading} loadingPosition="end" onClick={e => {
-                        executeRequest(query, limit, 0, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)
+                        executeRequest(query, limit, 0, setResults, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution)
                     }}>
                         Rechercher
                     </LoadingButton>
@@ -106,14 +132,14 @@ export default function Home() {
                 })}
 
                 <div className="mb-10 mt-5">
-                    <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, year === "none" ? undefined : Number.parseInt(year), finished, setResults, setError, setLoading)} />
+                    <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, setResults, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution)} />
                 </div>
             </div>}
         </Layout>
     )
 }
 
-async function executeRequest(query: string, limit: number, offset: number, year: number | undefined, finished: boolean | undefined, setResults: Dispatch<SetStateAction<ThesesQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>) {
+async function executeRequest(query: string, limit: number, offset: number, setResults: Dispatch<SetStateAction<ThesesQueryResult>>, setError: Dispatch<SetStateAction<string | null>>, setLoading: Dispatch<SetStateAction<boolean>>, year?: number, finished?: boolean, institution?: string) {
     setLoading(true)
     let data: ThesesQueryResult
     try {
@@ -121,6 +147,9 @@ async function executeRequest(query: string, limit: number, offset: number, year
         let url = `${process.env.GATSBY_API_URL}/theses?query=${query}&limit=${limit}&offset=${offset}`
         if (year !== undefined) url += `&year=${year}`
         if (finished !== undefined) url += `&finished=${finished}`
+        if (institution !== undefined) url += `&institution=${institution}`
+
+        console.log(url)
 
         const result = await fetch(url)
         data = await result.json()
@@ -128,7 +157,7 @@ async function executeRequest(query: string, limit: number, offset: number, year
     catch {
         setResults(undefined)
         setLoading(false)
-        return setError("The request to the API failed.")
+        return setError("Une erreur est survenue lors de la recherche.")
     }
 
     setError(null)
