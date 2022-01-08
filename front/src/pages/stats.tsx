@@ -155,7 +155,7 @@ export default function Stats() {
                 }]
             })
         }
-    }, [stats, year, finished, institution])
+    }, [stats, year, finished, institution, darkMode])
 
     return (
         <Layout>
