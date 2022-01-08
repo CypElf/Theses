@@ -131,9 +131,9 @@ export default function Home() {
                     )
                 })}
 
-                <div className="mb-10 mt-5">
+                {results.nbHits > 0 && <div className="mb-10 mt-5">
                     <Pagination color="primary" count={maxPage} page={currentPage} onChange={(e, value) => executeRequest(query, limit, value - 1, setResults, setError, setLoading, year === "none" ? undefined : Number.parseInt(year), finished, institution === "none" ? undefined : institution)} />
-                </div>
+                </div>}
             </div>}
         </Layout>
     )
